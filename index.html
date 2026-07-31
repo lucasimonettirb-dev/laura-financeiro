@@ -64,6 +64,13 @@
     max-width:480px;margin:0 auto;height:100dvh;height:100vh;display:flex;flex-direction:column;
     background:var(--bg);position:relative;box-shadow:var(--shadow);
   }
+  .login-screen{
+    max-width:480px;margin:0 auto;min-height:100dvh;min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;background:var(--bg);
+  }
+  .login-screen .brand-logo{height:46px;margin-bottom:6px;}
+  .login-screen .btn{max-width:280px;}
+  .login-status{font-size:.85rem;color:var(--ink-muted);}
   header.topbar{
     flex-shrink:0;padding:16px 18px 12px;border-bottom:1px solid var(--border);
     background:var(--surface);
@@ -125,6 +132,7 @@
   .btn.secondary{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);}
   .btn.danger{background:var(--danger);}
   .btn[data-armed="1"]{background:var(--danger);}
+  .btn:disabled{opacity:.6;cursor:default;}
 
   .totals{border-top:1px dashed var(--border);margin-top:6px;padding-top:10px;display:flex;flex-direction:column;gap:6px;}
   .totals .line{display:flex;justify-content:space-between;font-size:.86rem;color:var(--ink-muted);}
@@ -177,7 +185,14 @@
   @media (prefers-reduced-motion: reduce){ *{transition:none!important;} }
 </style>
 
-<div class="app-shell">
+<div class="login-screen" id="loginScreen">
+  <img class="brand-logo" src="logo.png" alt="Dra. Laura Nunes — Odontologia Clínica e Estética">
+  <p class="login-status" id="loginStatus">Verificando acesso…</p>
+  <button class="btn" id="googleSignInBtn" style="display:none;">Entrar com Google</button>
+  <p class="helper-text" id="loginError" style="display:none;color:var(--danger);text-align:center;max-width:320px;"></p>
+</div>
+
+<div class="app-shell" id="appShell" style="display:none;">
   <header class="topbar">
     <img class="brand-logo" src="logo.png" alt="Dra. Laura Nunes — Odontologia Clínica e Estética">
     <div class="section-row">
@@ -190,455 +205,306 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script>
-(function(){
-  "use strict";
-  var STORAGE_KEY = "consultorio_financeiro_v1";
-  var ICONS = {
-    calc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="8" y2="12.01"/><line x1="12" y1="12" x2="12" y2="12.01"/><line x1="16" y1="12" x2="16" y2="12.01"/><line x1="8" y1="16" x2="8" y2="16.01"/><line x1="12" y1="16" x2="12" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/></svg>',
-    users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20v-1a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v1"/><circle cx="10" cy="7" r="3.2"/><path d="M22 20v-1a3.8 3.8 0 0 0-2.7-3.65"/><path d="M15.2 4.2A3.8 3.8 0 0 1 17 11"/></svg>',
-    chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"/><line x1="12" y1="21" x2="12" y2="6"/><line x1="19" y1="21" x2="19" y2="14"/><line x1="3" y1="21" x2="21" y2="21"/></svg>',
-    gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.04.04a2 2 0 1 1-2.83 2.83l-.04-.04a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.06a1.65 1.65 0 0 0-1.09-1.51 1.65 1.65 0 0 0-1.82.33l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4a2 2 0 1 1 0-4h.06a1.65 1.65 0 0 0 1.51-1.09 1.65 1.65 0 0 0-.33-1.82l-.04-.04a2 2 0 1 1 2.83-2.83l.04.04a1.65 1.65 0 0 0 1.82.33H10a1.65 1.65 0 0 0 1-1.51V4a2 2 0 1 1 4 0v.06a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04a1.65 1.65 0 0 0-.33 1.82V10a1.65 1.65 0 0 0 1.51 1H20a2 2 0 1 1 0 4h-.06a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-    back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
-    box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.5 12 3 3.5 7.5 12 12l8.5-4.5Z"/><path d="M3.5 7.5v9L12 21l8.5-4.5v-9"/><path d="M12 12v9"/></svg>',
-    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
-    plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
-  };
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
+  onSnapshot, writeBatch, enableIndexedDbPersistence
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
-  function todayISO(){ return new Date().toISOString().slice(0,10); }
-  function r2(v){ return Math.round((Number(v)||0)*100)/100; }
-  function fmtMoney(v){ v = r2(v); if(Math.abs(v)<0.005) v = 0; return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
-  function fmtDate(iso){ if(!iso) return ''; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
-  function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
-  function clamp(n,min,max){ return Math.min(max,Math.max(min,n)); }
+var firebaseConfig = {
+  apiKey: "AIzaSyDhP5NZE2hjDbdebxQuYtWagY6gIV1EP3k",
+  authDomain: "laura-financeiro-b52bd.firebaseapp.com",
+  projectId: "laura-financeiro-b52bd",
+  storageBucket: "laura-financeiro-b52bd.firebasestorage.app",
+  messagingSenderId: "247652429978",
+  appId: "1:247652429978:web:03a971734e12d45608ef23"
+};
+var ALLOWED_EMAILS = ['lucasimonettirb@gmail.com', 'contato.laurabnunes@gmail.com'];
 
-  var PROCEDURE_GROUPS = [
-    { label:'Odontologia', options:['Avaliação / Consulta','Limpeza (Profilaxia)','Restauração','Extração','Tratamento de canal','Clareamento dental','Prótese','Facetas','Aplicação de flúor'] },
-    { label:'Harmonização Facial', options:['Botox (Toxina botulínica)','Preenchimento (Ácido hialurônico)','Bichectomia','Fios de sustentação','Skinbooster'] }
-  ];
+var fbApp = initializeApp(firebaseConfig);
+var auth = getAuth(fbApp);
+var db = getFirestore(fbApp);
+try{ enableIndexedDbPersistence(db); }catch(e){}
 
-  function loadState(){
+var ICONS = {
+  calc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="8" y2="12.01"/><line x1="12" y1="12" x2="12" y2="12.01"/><line x1="16" y1="12" x2="16" y2="12.01"/><line x1="8" y1="16" x2="8" y2="16.01"/><line x1="12" y1="16" x2="12" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20v-1a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v1"/><circle cx="10" cy="7" r="3.2"/><path d="M22 20v-1a3.8 3.8 0 0 0-2.7-3.65"/><path d="M15.2 4.2A3.8 3.8 0 0 1 17 11"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"/><line x1="12" y1="21" x2="12" y2="6"/><line x1="19" y1="21" x2="19" y2="14"/><line x1="3" y1="21" x2="21" y2="21"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.04.04a2 2 0 1 1-2.83 2.83l-.04-.04a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.06a1.65 1.65 0 0 0-1.09-1.51 1.65 1.65 0 0 0-1.82.33l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4a2 2 0 1 1 0-4h.06a1.65 1.65 0 0 0 1.51-1.09 1.65 1.65 0 0 0-.33-1.82l-.04-.04a2 2 0 1 1 2.83-2.83l.04.04a1.65 1.65 0 0 0 1.82.33H10a1.65 1.65 0 0 0 1-1.51V4a2 2 0 1 1 4 0v.06a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04a1.65 1.65 0 0 0-.33 1.82V10a1.65 1.65 0 0 0 1.51 1H20a2 2 0 1 1 0 4h-.06a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
+  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.5 12 3 3.5 7.5 12 12l8.5-4.5Z"/><path d="M3.5 7.5v9L12 21l8.5-4.5v-9"/><path d="M12 12v9"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+};
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function r2(v){ return Math.round((Number(v)||0)*100)/100; }
+function fmtMoney(v){ v = r2(v); if(Math.abs(v)<0.005) v = 0; return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtDate(iso){ if(!iso) return ''; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function clamp(n,min,max){ return Math.min(max,Math.max(min,n)); }
+
+var PROCEDURE_GROUPS = [
+  { label:'Odontologia', options:['Avaliação / Consulta','Limpeza (Profilaxia)','Restauração','Extração','Tratamento de canal','Clareamento dental','Prótese','Facetas','Aplicação de flúor'] },
+  { label:'Harmonização Facial', options:['Botox (Toxina botulínica)','Preenchimento (Ácido hialurônico)','Bichectomia','Fios de sustentação','Skinbooster'] }
+];
+
+var state = { settings:{ defaultRoomCost:0, defaultMargin:30 }, patients:[], treatments:[], purchases:[] };
+
+function findPatientByName(name){
+  var n = name.trim().toLowerCase();
+  return state.patients.filter(function(p){ return p.name.trim().toLowerCase()===n; })[0];
+}
+function patientTreatments(pid){
+  return state.treatments.filter(function(t){ return t.patientId===pid; }).sort(function(a,b){ return b.date.localeCompare(a.date); });
+}
+function patientBalance(pid){
+  var ts = patientTreatments(pid);
+  var charged=0, paid=0;
+  ts.forEach(function(t){ charged+=t.price; paid+=t.paid; });
+  return { charged:charged, paid:paid, balance:charged-paid };
+}
+
+var activeTab = 'calc';
+var selectedPatientId = null;
+var calcTouchedPrice = false;
+
+var TABS = [
+  {id:'calc', label:'Calcular', icon:'calc', title:'Calculadora', subtitle:'Custo e preço do atendimento'},
+  {id:'patients', label:'Pacientes', icon:'users', title:'Pacientes', subtitle:'Histórico e pagamentos'},
+  {id:'stock', label:'Estoque', icon:'box', title:'Estoque e compras', subtitle:'Materiais de uso geral'},
+  {id:'summary', label:'Resumo', icon:'chart', title:'Resumo financeiro', subtitle:'Faturamento, custos e lucro'},
+  {id:'settings', label:'Ajustes', icon:'gear', title:'Ajustes', subtitle:'Custo da sala e margem padrão'}
+];
+
+function renderTabbar(){
+  var el = document.getElementById('tabbar');
+  el.innerHTML = TABS.map(function(t){
+    return '<button data-tab="'+t.id+'" class="'+(activeTab===t.id?'active':'')+'">'+ICONS[t.icon]+'<span>'+t.label+'</span></button>';
+  }).join('');
+  Array.prototype.forEach.call(el.querySelectorAll('button'), function(btn){
+    btn.addEventListener('click', function(){
+      activeTab = btn.getAttribute('data-tab');
+      selectedPatientId = null;
+      renderAll();
+    });
+  });
+}
+
+function setHeader(title, subtitle){
+  document.getElementById('pageTitle').textContent = title;
+  document.getElementById('pageSubtitle').textContent = subtitle;
+}
+
+function showToast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+
+function renderAll(){
+  renderTabbar();
+  var meta = TABS.filter(function(t){return t.id===activeTab;})[0];
+  setHeader(meta.title, meta.subtitle);
+  if(activeTab==='calc') renderCalc();
+  else if(activeTab==='patients') renderPatients();
+  else if(activeTab==='stock') renderStock();
+  else if(activeTab==='summary') renderSummary();
+  else if(activeTab==='settings') renderSettings();
+}
+
+// ---------- CALCULADORA ----------
+function renderCalc(){
+  calcTouchedPrice = false;
+  var content = document.getElementById('content');
+  var procedureOptions = PROCEDURE_GROUPS.map(function(g){
+    return '<optgroup label="'+escapeHtml(g.label)+'">'+g.options.map(function(o){
+      return '<option value="'+escapeHtml(o)+'">'+escapeHtml(o)+'</option>';
+    }).join('')+'</optgroup>';
+  }).join('') + '<option value="__outro__">Outro (digitar)</option>';
+
+  content.innerHTML =
+    '<div class="card">' +
+      '<div class="field"><label class="field-label">Paciente</label>' +
+        '<input type="text" id="fPatient" list="patientDatalist" placeholder="Nome do paciente" autocomplete="off">' +
+        '<datalist id="patientDatalist">'+state.patients.map(function(p){return '<option value="'+escapeHtml(p.name)+'">';}).join('')+'</datalist>' +
+      '</div>' +
+      '<div class="field"><label class="field-label">Procedimento</label>' +
+        '<select id="fDescSelect">'+procedureOptions+'</select>' +
+      '</div>' +
+      '<div class="field" id="fDescCustomWrap" style="display:none;">' +
+        '<label class="field-label">Qual procedimento?</label>' +
+        '<input type="text" id="fDescCustom" placeholder="Digite o procedimento">' +
+      '</div>' +
+      '<div class="field"><label class="field-label">Data</label><input type="date" id="fDate" value="'+todayISO()+'"></div>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<label class="field-label" style="margin-bottom:8px;">Materiais de custo alto usados</label>' +
+      '<div id="materialsList"></div>' +
+      '<button type="button" class="link-btn" id="addMaterial">+ adicionar material</button>' +
+      '<p class="helper-text" style="margin-top:8px;">Use para itens caros específicos deste atendimento, como toxina botulínica ou ácido hialurônico. Materiais de baixo custo (luvas, algodão, gel clareador) lance direto na aba Estoque.</p>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<div class="field"><label class="field-label">Custo da sala neste atendimento</label>' +
+        '<input type="number" id="fRoom" min="0" step="0.01" value="'+(Number(state.settings.defaultRoomCost)||0)+'"></div>' +
+      '<div class="field" style="margin-bottom:8px;"><label class="field-label">Margem de lucro desejada (%)</label>' +
+        '<input type="number" id="fMargin" min="0" max="95" step="1" value="'+(state.settings.defaultMargin||30)+'">' +
+      '</div>' +
+      '<p class="helper-text">Esse é o percentual do preço final que sobra de lucro, depois de cobrir materiais e a sala.</p>' +
+      '<div class="totals">' +
+        '<div class="line"><span>Custo com materiais</span><span id="sumMaterials">'+fmtMoney(0)+'</span></div>' +
+        '<div class="line"><span>Custo da sala</span><span id="sumRoom">'+fmtMoney(0)+'</span></div>' +
+        '<div class="line"><span>Custo total</span><span id="sumCusto">'+fmtMoney(0)+'</span></div>' +
+        '<div class="line profit"><span>Lucro estimado</span><span id="sumLucro">'+fmtMoney(0)+'</span></div>' +
+        '<div class="line big"><span>Preço sugerido</span><span id="sumPreco">'+fmtMoney(0)+'</span></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<div class="row-2">' +
+        '<div class="field"><label class="field-label">Valor a cobrar</label><input type="number" id="fPrice" min="0" step="0.01" value="0"></div>' +
+        '<div class="field"><label class="field-label">Já recebido agora</label><input type="number" id="fPaidNow" min="0" step="0.01" value="0"></div>' +
+      '</div>' +
+      '<button class="btn" id="saveTreatment">Salvar atendimento</button>' +
+    '</div>';
+
+  var descSelect = document.getElementById('fDescSelect');
+  var descCustomWrap = document.getElementById('fDescCustomWrap');
+  var descCustom = document.getElementById('fDescCustom');
+  descSelect.addEventListener('change', function(){
+    descCustomWrap.style.display = descSelect.value==='__outro__' ? 'block' : 'none';
+  });
+
+  var materialsList = document.getElementById('materialsList');
+  function addMaterialRow(name, cost){
+    var row = document.createElement('div');
+    row.className = 'material-row';
+    row.innerHTML =
+      '<input type="text" class="mName" placeholder="Ex: Toxina botulínica..." value="'+escapeHtml(name||'')+'">' +
+      '<input type="number" class="mCost" placeholder="R$" min="0" step="0.01" value="'+(cost||'')+'">' +
+      '<button type="button" class="icon-btn removeMaterial">'+ICONS.trash+'</button>';
+    materialsList.appendChild(row);
+    row.querySelector('.removeMaterial').addEventListener('click', function(){ row.remove(); updateTotals(); });
+    row.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', updateTotals); });
+  }
+  addMaterialRow('', '');
+  document.getElementById('addMaterial').addEventListener('click', function(){ addMaterialRow('',''); });
+
+  function getMaterials(){
+    return Array.prototype.map.call(materialsList.querySelectorAll('.material-row'), function(row){
+      return { label: row.querySelector('.mName').value.trim(), cost: Number(row.querySelector('.mCost').value)||0 };
+    }).filter(function(m){ return m.label || m.cost; });
+  }
+
+  var priceInput = document.getElementById('fPrice');
+  priceInput.addEventListener('input', function(){ calcTouchedPrice = true; });
+
+  function updateTotals(){
+    var materialsSum = getMaterials().reduce(function(a,m){return a+m.cost;},0);
+    var roomCost = Number(document.getElementById('fRoom').value)||0;
+    var margin = clamp(Number(document.getElementById('fMargin').value)||0, 0, 95);
+    var custoTotal = materialsSum + roomCost;
+    var price = margin>=95 ? custoTotal/0.05 : custoTotal/(1-margin/100);
+    var lucro = price - custoTotal;
+    document.getElementById('sumMaterials').textContent = fmtMoney(materialsSum);
+    document.getElementById('sumRoom').textContent = fmtMoney(roomCost);
+    document.getElementById('sumCusto').textContent = fmtMoney(custoTotal);
+    document.getElementById('sumLucro').textContent = fmtMoney(lucro);
+    document.getElementById('sumPreco').textContent = fmtMoney(price);
+    if(!calcTouchedPrice){ priceInput.value = price.toFixed(2); }
+    return { materialsSum:materialsSum, roomCost:roomCost, custoTotal:custoTotal, margin:margin, price:price };
+  }
+  document.getElementById('fRoom').addEventListener('input', updateTotals);
+  document.getElementById('fMargin').addEventListener('input', updateTotals);
+  updateTotals();
+
+  document.getElementById('saveTreatment').addEventListener('click', async function(){
+    var name = document.getElementById('fPatient').value.trim();
+    if(!name){ showToast('Informe o nome do paciente'); return; }
+    var desc = descSelect.value==='__outro__' ? descCustom.value.trim() : descSelect.value;
+    if(!desc){ showToast('Informe o procedimento'); return; }
+    var date = document.getElementById('fDate').value || todayISO();
+    var materials = getMaterials();
+    var totals = updateTotals();
+    var price = Number(priceInput.value)||0;
+    var paidNow = Number(document.getElementById('fPaidNow').value)||0;
+    var btn = this;
+    btn.disabled = true;
     try{
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if(raw){
-        var parsed = JSON.parse(raw);
-        parsed.settings = parsed.settings || {};
-        parsed.settings.defaultRoomCost = parsed.settings.defaultRoomCost || 0;
-        parsed.settings.defaultMargin = (parsed.settings.defaultMargin==null) ? 30 : parsed.settings.defaultMargin;
-        parsed.patients = parsed.patients || [];
-        parsed.treatments = parsed.treatments || [];
-        parsed.purchases = parsed.purchases || [];
-        return parsed;
-      }
-    }catch(e){}
-    return { settings:{ defaultRoomCost:0, defaultMargin:30 }, patients:[], treatments:[], purchases:[] };
-  }
-  var state = loadState();
-  function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-
-  function findPatientByName(name){
-    var n = name.trim().toLowerCase();
-    return state.patients.filter(function(p){ return p.name.trim().toLowerCase()===n; })[0];
-  }
-  function patientTreatments(pid){
-    return state.treatments.filter(function(t){ return t.patientId===pid; }).sort(function(a,b){ return b.date.localeCompare(a.date); });
-  }
-  function patientBalance(pid){
-    var ts = patientTreatments(pid);
-    var charged=0, paid=0;
-    ts.forEach(function(t){ charged+=t.price; paid+=t.paid; });
-    return { charged:charged, paid:paid, balance:charged-paid };
-  }
-
-  var activeTab = 'calc';
-  var selectedPatientId = null;
-  var calcTouchedPrice = false;
-
-  var TABS = [
-    {id:'calc', label:'Calcular', icon:'calc', title:'Calculadora', subtitle:'Custo e preço do atendimento'},
-    {id:'patients', label:'Pacientes', icon:'users', title:'Pacientes', subtitle:'Histórico e pagamentos'},
-    {id:'stock', label:'Estoque', icon:'box', title:'Estoque e compras', subtitle:'Materiais de uso geral'},
-    {id:'summary', label:'Resumo', icon:'chart', title:'Resumo financeiro', subtitle:'Faturamento, custos e lucro'},
-    {id:'settings', label:'Ajustes', icon:'gear', title:'Ajustes', subtitle:'Custo da sala e margem padrão'}
-  ];
-
-  function renderTabbar(){
-    var el = document.getElementById('tabbar');
-    el.innerHTML = TABS.map(function(t){
-      return '<button data-tab="'+t.id+'" class="'+(activeTab===t.id?'active':'')+'">'+ICONS[t.icon]+'<span>'+t.label+'</span></button>';
-    }).join('');
-    Array.prototype.forEach.call(el.querySelectorAll('button'), function(btn){
-      btn.addEventListener('click', function(){
-        activeTab = btn.getAttribute('data-tab');
-        selectedPatientId = null;
-        renderAll();
-      });
-    });
-  }
-
-  function setHeader(title, subtitle){
-    document.getElementById('pageTitle').textContent = title;
-    document.getElementById('pageSubtitle').textContent = subtitle;
-  }
-
-  function showToast(msg){
-    var t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(t._timer);
-    t._timer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
-  }
-
-  function renderAll(){
-    renderTabbar();
-    var meta = TABS.filter(function(t){return t.id===activeTab;})[0];
-    setHeader(meta.title, meta.subtitle);
-    if(activeTab==='calc') renderCalc();
-    else if(activeTab==='patients') renderPatients();
-    else if(activeTab==='stock') renderStock();
-    else if(activeTab==='summary') renderSummary();
-    else if(activeTab==='settings') renderSettings();
-  }
-
-  // ---------- CALCULADORA ----------
-  function renderCalc(){
-    calcTouchedPrice = false;
-    var content = document.getElementById('content');
-    var procedureOptions = PROCEDURE_GROUPS.map(function(g){
-      return '<optgroup label="'+escapeHtml(g.label)+'">'+g.options.map(function(o){
-        return '<option value="'+escapeHtml(o)+'">'+escapeHtml(o)+'</option>';
-      }).join('')+'</optgroup>';
-    }).join('') + '<option value="__outro__">Outro (digitar)</option>';
-
-    content.innerHTML =
-      '<div class="card">' +
-        '<div class="field"><label class="field-label">Paciente</label>' +
-          '<input type="text" id="fPatient" list="patientDatalist" placeholder="Nome do paciente" autocomplete="off">' +
-          '<datalist id="patientDatalist">'+state.patients.map(function(p){return '<option value="'+escapeHtml(p.name)+'">';}).join('')+'</datalist>' +
-        '</div>' +
-        '<div class="field"><label class="field-label">Procedimento</label>' +
-          '<select id="fDescSelect">'+procedureOptions+'</select>' +
-        '</div>' +
-        '<div class="field" id="fDescCustomWrap" style="display:none;">' +
-          '<label class="field-label">Qual procedimento?</label>' +
-          '<input type="text" id="fDescCustom" placeholder="Digite o procedimento">' +
-        '</div>' +
-        '<div class="field"><label class="field-label">Data</label><input type="date" id="fDate" value="'+todayISO()+'"></div>' +
-      '</div>' +
-
-      '<div class="card">' +
-        '<label class="field-label" style="margin-bottom:8px;">Materiais de custo alto usados</label>' +
-        '<div id="materialsList"></div>' +
-        '<button type="button" class="link-btn" id="addMaterial">+ adicionar material</button>' +
-        '<p class="helper-text" style="margin-top:8px;">Use para itens caros específicos deste atendimento, como toxina botulínica ou ácido hialurônico. Materiais de baixo custo (luvas, algodão, gel clareador) lance direto na aba Estoque.</p>' +
-      '</div>' +
-
-      '<div class="card">' +
-        '<div class="field"><label class="field-label">Custo da sala neste atendimento</label>' +
-          '<input type="number" id="fRoom" min="0" step="0.01" value="'+(Number(state.settings.defaultRoomCost)||0)+'"></div>' +
-        '<div class="field" style="margin-bottom:8px;"><label class="field-label">Margem de lucro desejada (%)</label>' +
-          '<input type="number" id="fMargin" min="0" max="95" step="1" value="'+(state.settings.defaultMargin||30)+'">' +
-        '</div>' +
-        '<p class="helper-text">Esse é o percentual do preço final que sobra de lucro, depois de cobrir materiais e a sala.</p>' +
-        '<div class="totals">' +
-          '<div class="line"><span>Custo com materiais</span><span id="sumMaterials">'+fmtMoney(0)+'</span></div>' +
-          '<div class="line"><span>Custo da sala</span><span id="sumRoom">'+fmtMoney(0)+'</span></div>' +
-          '<div class="line"><span>Custo total</span><span id="sumCusto">'+fmtMoney(0)+'</span></div>' +
-          '<div class="line profit"><span>Lucro estimado</span><span id="sumLucro">'+fmtMoney(0)+'</span></div>' +
-          '<div class="line big"><span>Preço sugerido</span><span id="sumPreco">'+fmtMoney(0)+'</span></div>' +
-        '</div>' +
-      '</div>' +
-
-      '<div class="card">' +
-        '<div class="row-2">' +
-          '<div class="field"><label class="field-label">Valor a cobrar</label><input type="number" id="fPrice" min="0" step="0.01" value="0"></div>' +
-          '<div class="field"><label class="field-label">Já recebido agora</label><input type="number" id="fPaidNow" min="0" step="0.01" value="0"></div>' +
-        '</div>' +
-        '<button class="btn" id="saveTreatment">Salvar atendimento</button>' +
-      '</div>';
-
-    var descSelect = document.getElementById('fDescSelect');
-    var descCustomWrap = document.getElementById('fDescCustomWrap');
-    var descCustom = document.getElementById('fDescCustom');
-    descSelect.addEventListener('change', function(){
-      descCustomWrap.style.display = descSelect.value==='__outro__' ? 'block' : 'none';
-    });
-
-    var materialsList = document.getElementById('materialsList');
-    function addMaterialRow(name, cost){
-      var row = document.createElement('div');
-      row.className = 'material-row';
-      row.innerHTML =
-        '<input type="text" class="mName" placeholder="Ex: Toxina botulínica..." value="'+escapeHtml(name||'')+'">' +
-        '<input type="number" class="mCost" placeholder="R$" min="0" step="0.01" value="'+(cost||'')+'">' +
-        '<button type="button" class="icon-btn removeMaterial">'+ICONS.trash+'</button>';
-      materialsList.appendChild(row);
-      row.querySelector('.removeMaterial').addEventListener('click', function(){ row.remove(); updateTotals(); });
-      row.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', updateTotals); });
-    }
-    addMaterialRow('', '');
-    document.getElementById('addMaterial').addEventListener('click', function(){ addMaterialRow('',''); });
-
-    function getMaterials(){
-      return Array.prototype.map.call(materialsList.querySelectorAll('.material-row'), function(row){
-        return { label: row.querySelector('.mName').value.trim(), cost: Number(row.querySelector('.mCost').value)||0 };
-      }).filter(function(m){ return m.label || m.cost; });
-    }
-
-    var priceInput = document.getElementById('fPrice');
-    priceInput.addEventListener('input', function(){ calcTouchedPrice = true; });
-
-    function updateTotals(){
-      var materialsSum = getMaterials().reduce(function(a,m){return a+m.cost;},0);
-      var roomCost = Number(document.getElementById('fRoom').value)||0;
-      var margin = clamp(Number(document.getElementById('fMargin').value)||0, 0, 95);
-      var custoTotal = materialsSum + roomCost;
-      var price = margin>=95 ? custoTotal/0.05 : custoTotal/(1-margin/100);
-      var lucro = price - custoTotal;
-      document.getElementById('sumMaterials').textContent = fmtMoney(materialsSum);
-      document.getElementById('sumRoom').textContent = fmtMoney(roomCost);
-      document.getElementById('sumCusto').textContent = fmtMoney(custoTotal);
-      document.getElementById('sumLucro').textContent = fmtMoney(lucro);
-      document.getElementById('sumPreco').textContent = fmtMoney(price);
-      if(!calcTouchedPrice){ priceInput.value = price.toFixed(2); }
-      return { materialsSum:materialsSum, roomCost:roomCost, custoTotal:custoTotal, margin:margin, price:price };
-    }
-    document.getElementById('fRoom').addEventListener('input', updateTotals);
-    document.getElementById('fMargin').addEventListener('input', updateTotals);
-    updateTotals();
-
-    document.getElementById('saveTreatment').addEventListener('click', function(){
-      var name = document.getElementById('fPatient').value.trim();
-      if(!name){ showToast('Informe o nome do paciente'); return; }
-      var desc = descSelect.value==='__outro__' ? descCustom.value.trim() : descSelect.value;
-      if(!desc){ showToast('Informe o procedimento'); return; }
-      var date = document.getElementById('fDate').value || todayISO();
-      var materials = getMaterials();
-      var totals = updateTotals();
-      var price = Number(priceInput.value)||0;
-      var paidNow = Number(document.getElementById('fPaidNow').value)||0;
-
       var patient = findPatientByName(name);
-      if(!patient){
-        patient = { id: uid(), name: name, phone:'', notes:'', createdAt: todayISO() };
-        state.patients.push(patient);
+      var patientId;
+      if(patient){ patientId = patient.id; }
+      else{
+        var newPatientRef = await addDoc(collection(db,'patients'), { name:name, phone:'', notes:'', createdAt: todayISO() });
+        patientId = newPatientRef.id;
       }
-      state.treatments.push({
-        id: uid(), patientId: patient.id, date: date, description: desc,
+      await addDoc(collection(db,'treatments'), {
+        patientId: patientId, date: date, description: desc,
         materials: materials, materialsCost: totals.materialsSum, roomCost: totals.roomCost, totalCost: totals.custoTotal,
         margin: totals.margin, price: price, paid: paidNow
       });
-      saveState();
       showToast('Atendimento salvo!');
       renderCalc();
-    });
-  }
+    }catch(err){
+      showToast('Erro ao salvar. Tenta de novo.');
+      btn.disabled = false;
+    }
+  });
+}
 
-  // ---------- ESTOQUE ----------
-  function renderStock(){
-    var content = document.getElementById('content');
-    var thisMonth = todayISO().slice(0,7);
-    var monthTotal = state.purchases.filter(function(p){return p.date.slice(0,7)===thisMonth;})
-      .reduce(function(a,p){return a+p.value;},0);
+// ---------- ESTOQUE ----------
+function renderStock(){
+  var content = document.getElementById('content');
+  var thisMonth = todayISO().slice(0,7);
+  var monthTotal = state.purchases.filter(function(p){return p.date.slice(0,7)===thisMonth;})
+    .reduce(function(a,p){return a+p.value;},0);
 
-    content.innerHTML =
-      '<div class="card">' +
-        '<h2 class="section-title">Registrar compra</h2>' +
-        '<div class="field"><label class="field-label">O que foi comprado</label>' +
-          '<input type="text" id="pDesc" placeholder="Ex: Caixa de luvas, algodão, gel clareador..."></div>' +
-        '<div class="row-2">' +
-          '<div class="field"><label class="field-label">Data</label><input type="date" id="pDate" value="'+todayISO()+'"></div>' +
-          '<div class="field"><label class="field-label">Valor</label><input type="number" id="pValue" min="0" step="0.01" placeholder="R$"></div>' +
-        '</div>' +
-        '<button class="btn" id="addPurchase">Adicionar compra</button>' +
+  content.innerHTML =
+    '<div class="card">' +
+      '<h2 class="section-title">Registrar compra</h2>' +
+      '<div class="field"><label class="field-label">O que foi comprado</label>' +
+        '<input type="text" id="pDesc" placeholder="Ex: Caixa de luvas, algodão, gel clareador..."></div>' +
+      '<div class="row-2">' +
+        '<div class="field"><label class="field-label">Data</label><input type="date" id="pDate" value="'+todayISO()+'"></div>' +
+        '<div class="field"><label class="field-label">Valor</label><input type="number" id="pValue" min="0" step="0.01" placeholder="R$"></div>' +
       '</div>' +
-      '<div class="stat-tile" style="margin-bottom:16px;"><div class="label">Gasto em estoque este mês</div><div class="value">'+fmtMoney(monthTotal)+'</div></div>' +
-      '<h2 class="section-title">Compras registradas</h2>' +
-      '<div id="purchaseList"></div>';
+      '<button class="btn" id="addPurchase">Adicionar compra</button>' +
+    '</div>' +
+    '<div class="stat-tile" style="margin-bottom:16px;"><div class="label">Gasto em estoque este mês</div><div class="value">'+fmtMoney(monthTotal)+'</div></div>' +
+    '<h2 class="section-title">Compras registradas</h2>' +
+    '<div id="purchaseList"></div>';
 
-    var listEl = document.getElementById('purchaseList');
-    function renderList(){
-      var sorted = state.purchases.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
-      if(sorted.length===0){
-        listEl.innerHTML = '<div class="empty-state">Nenhuma compra registrada ainda.</div>';
-        return;
-      }
-      listEl.innerHTML = sorted.map(function(p){
-        return '<div class="treat-item" data-id="'+p.id+'">' +
-          '<div class="top"><div><div class="desc">'+escapeHtml(p.description)+'</div><div class="date">'+fmtDate(p.date)+'</div></div>' +
-          '<span style="font-weight:700;font-variant-numeric:tabular-nums;">'+fmtMoney(p.value)+'</span></div>' +
-          '<button class="icon-btn delPurchase" data-id="'+p.id+'">'+ICONS.trash+' <span style="font-size:.74rem;margin-left:4px;">excluir</span></button>' +
-        '</div>';
-      }).join('');
-      Array.prototype.forEach.call(listEl.querySelectorAll('.delPurchase'), function(btn){
-        btn.addEventListener('click', function(){
-          if(btn.getAttribute('data-armed')==='1'){
-            state.purchases = state.purchases.filter(function(x){return x.id!==btn.getAttribute('data-id');});
-            saveState();
+  var listEl = document.getElementById('purchaseList');
+  function renderList(){
+    var sorted = state.purchases.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+    if(sorted.length===0){
+      listEl.innerHTML = '<div class="empty-state">Nenhuma compra registrada ainda.</div>';
+      return;
+    }
+    listEl.innerHTML = sorted.map(function(p){
+      return '<div class="treat-item" data-id="'+p.id+'">' +
+        '<div class="top"><div><div class="desc">'+escapeHtml(p.description)+'</div><div class="date">'+fmtDate(p.date)+'</div></div>' +
+        '<span style="font-weight:700;font-variant-numeric:tabular-nums;">'+fmtMoney(p.value)+'</span></div>' +
+        '<button class="icon-btn delPurchase" data-id="'+p.id+'">'+ICONS.trash+' <span style="font-size:.74rem;margin-left:4px;">excluir</span></button>' +
+      '</div>';
+    }).join('');
+    Array.prototype.forEach.call(listEl.querySelectorAll('.delPurchase'), function(btn){
+      btn.addEventListener('click', async function(){
+        if(btn.getAttribute('data-armed')==='1'){
+          try{
+            await deleteDoc(doc(db,'purchases', btn.getAttribute('data-id')));
             showToast('Compra excluída');
             renderStock();
-          } else {
-            btn.setAttribute('data-armed','1');
-            btn.querySelector('span').textContent='confirmar?';
-            setTimeout(function(){ if(btn.isConnected){btn.setAttribute('data-armed','0'); btn.querySelector('span').textContent='excluir';} }, 4000);
-          }
-        });
-      });
-    }
-    renderList();
-
-    document.getElementById('addPurchase').addEventListener('click', function(){
-      var desc = document.getElementById('pDesc').value.trim();
-      var date = document.getElementById('pDate').value || todayISO();
-      var value = Number(document.getElementById('pValue').value)||0;
-      if(!desc){ showToast('Informe o que foi comprado'); return; }
-      if(value<=0){ showToast('Informe o valor'); return; }
-      state.purchases.push({ id: uid(), description: desc, date: date, value: value });
-      saveState();
-      showToast('Compra registrada!');
-      renderStock();
-    });
-  }
-
-  // ---------- PACIENTES ----------
-  function renderPatients(){
-    var content = document.getElementById('content');
-    if(selectedPatientId){ renderPatientDetail(content); return; }
-
-    var html = '<button class="btn secondary" id="newPatientBtn" style="margin-bottom:14px;">+ novo paciente</button>';
-    if(state.patients.length===0){
-      html += '<div class="empty-state">Nenhum paciente cadastrado ainda.<br>Use a Calculadora para registrar o primeiro atendimento, ou adicione um paciente aqui.</div>';
-    } else {
-      var sorted = state.patients.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
-      html += sorted.map(function(p){
-        var bal = patientBalance(p.id);
-        var pillClass = bal.balance<=0.004 ? 'pago' : (bal.paid>0 ? 'parcial' : 'pendente');
-        var pillLabel = bal.balance<=0.004 ? 'em dia' : (bal.paid>0 ? 'parcial' : 'pendente');
-        return '<div class="patient-item" data-id="'+p.id+'">' +
-          '<div><div class="name">'+escapeHtml(p.name)+'</div><div class="sub">'+fmtMoney(bal.paid)+' recebido de '+fmtMoney(bal.charged)+'</div></div>' +
-          '<span class="pill '+pillClass+'">'+pillLabel+'</span>' +
-        '</div>';
-      }).join('');
-    }
-    content.innerHTML = html;
-
-    document.getElementById('newPatientBtn').addEventListener('click', function(){
-      var name = window.prompt ? '' : '';
-      openNewPatientForm();
-    });
-    Array.prototype.forEach.call(content.querySelectorAll('.patient-item'), function(el){
-      el.addEventListener('click', function(){ selectedPatientId = el.getAttribute('data-id'); renderPatients(); });
-    });
-  }
-
-  function openNewPatientForm(){
-    var content = document.getElementById('content');
-    content.innerHTML =
-      '<div class="card">' +
-        '<h2 class="section-title">Novo paciente</h2>' +
-        '<div class="field"><label class="field-label">Nome</label><input type="text" id="npName" placeholder="Nome completo"></div>' +
-        '<div class="field"><label class="field-label">Telefone (opcional)</label><input type="tel" id="npPhone" placeholder="(00) 00000-0000"></div>' +
-        '<div class="field"><label class="field-label">Observações (opcional)</label><textarea id="npNotes" placeholder="Alergias, preferências, etc."></textarea></div>' +
-        '<button class="btn" id="npSave">Salvar paciente</button>' +
-        '<button class="btn secondary" id="npCancel" style="margin-top:8px;">Cancelar</button>' +
-      '</div>';
-    document.getElementById('npCancel').addEventListener('click', renderPatients);
-    document.getElementById('npSave').addEventListener('click', function(){
-      var name = document.getElementById('npName').value.trim();
-      if(!name){ showToast('Informe o nome'); return; }
-      var p = { id: uid(), name:name, phone: document.getElementById('npPhone').value.trim(),
-        notes: document.getElementById('npNotes').value.trim(), createdAt: todayISO() };
-      state.patients.push(p);
-      saveState();
-      showToast('Paciente adicionado!');
-      renderPatients();
-    });
-  }
-
-  function renderPatientDetail(content){
-    var p = state.patients.filter(function(x){return x.id===selectedPatientId;})[0];
-    if(!p){ selectedPatientId=null; renderPatients(); return; }
-    var bal = patientBalance(p.id);
-    var treatments = patientTreatments(p.id);
-
-    var html = '<div class="back-row" id="backBtn">'+ICONS.back+'<span>Pacientes</span></div>';
-    html += '<div class="card">' +
-      '<h2 class="section-title">'+escapeHtml(p.name)+'</h2>' +
-      (p.phone ? '<p class="helper-text" style="margin-bottom:6px;">'+escapeHtml(p.phone)+'</p>' : '') +
-      (p.notes ? '<p class="helper-text">'+escapeHtml(p.notes)+'</p>' : '') +
-      '<div class="stat-grid" style="margin-top:8px;margin-bottom:0;">' +
-        '<div class="stat-tile accent"><div class="label">Recebido</div><div class="value">'+fmtMoney(bal.paid)+'</div></div>' +
-        '<div class="stat-tile '+(bal.balance>0.004?'danger':'')+'"><div class="label">Saldo</div><div class="value">'+fmtMoney(bal.balance)+'</div></div>' +
-      '</div>' +
-      '<button class="btn danger" id="delPatientBtn" style="margin-top:12px;">Excluir paciente</button>' +
-    '</div>';
-
-    html += '<h2 class="section-title">Histórico de atendimentos</h2>';
-    if(treatments.length===0){
-      html += '<div class="empty-state">Nenhum atendimento registrado ainda.</div>';
-    } else {
-      html += treatments.map(function(t){
-        var tbal = t.price - t.paid;
-        var statusClass = tbal<=0.004 ? 'pago' : (t.paid>0?'parcial':'pendente');
-        var statusLabel = tbal<=0.004 ? 'pago' : (t.paid>0?'parcial':'pendente');
-        return '<div class="treat-item" data-id="'+t.id+'">' +
-          '<div class="top"><div><div class="desc">'+escapeHtml(t.description)+'</div><div class="date">'+fmtDate(t.date)+'</div></div>' +
-          '<span class="pill '+statusClass+'">'+statusLabel+'</span></div>' +
-          '<div class="figures">' +
-            '<div>Custo<b>'+fmtMoney(t.totalCost)+'</b></div>' +
-            '<div>Cobrado<b>'+fmtMoney(t.price)+'</b></div>' +
-            '<div>Recebido<b>'+fmtMoney(t.paid)+'</b></div>' +
-          '</div>' +
-          (tbal>0.004 ? (
-            '<div class="inline-pay">' +
-              '<input type="number" class="payInput" min="0" step="0.01" placeholder="Valor recebido">' +
-              '<button class="link-btn registerPay" data-id="'+t.id+'">registrar</button>' +
-            '</div>'
-          ) : '') +
-          '<button class="icon-btn delTreat" data-id="'+t.id+'" style="margin-top:6px;">'+ICONS.trash+' <span style="font-size:.74rem;margin-left:4px;">excluir</span></button>' +
-        '</div>';
-      }).join('');
-    }
-    content.innerHTML = html;
-
-    document.getElementById('backBtn').addEventListener('click', function(){ selectedPatientId=null; renderPatients(); });
-
-    var delBtn = document.getElementById('delPatientBtn');
-    delBtn.addEventListener('click', function(){
-      if(delBtn.getAttribute('data-armed')==='1'){
-        state.patients = state.patients.filter(function(x){return x.id!==p.id;});
-        state.treatments = state.treatments.filter(function(t){return t.patientId!==p.id;});
-        saveState();
-        selectedPatientId = null;
-        showToast('Paciente excluído');
-        renderPatients();
-      } else {
-        delBtn.setAttribute('data-armed','1');
-        delBtn.textContent = 'Confirmar exclusão?';
-        setTimeout(function(){ delBtn.setAttribute('data-armed','0'); delBtn.textContent='Excluir paciente'; }, 4000);
-      }
-    });
-
-    Array.prototype.forEach.call(content.querySelectorAll('.registerPay'), function(btn){
-      btn.addEventListener('click', function(){
-        var row = btn.closest('.inline-pay');
-        var val = Number(row.querySelector('.payInput').value)||0;
-        if(val<=0){ showToast('Informe um valor'); return; }
-        var t = state.treatments.filter(function(x){return x.id===btn.getAttribute('data-id');})[0];
-        t.paid += val;
-        saveState();
-        showToast('Pagamento registrado!');
-        renderPatientDetail(content);
-      });
-    });
-    Array.prototype.forEach.call(content.querySelectorAll('.delTreat'), function(btn){
-      btn.addEventListener('click', function(){
-        if(btn.getAttribute('data-armed')==='1'){
-          state.treatments = state.treatments.filter(function(x){return x.id!==btn.getAttribute('data-id');});
-          saveState();
-          showToast('Atendimento excluído');
-          renderPatientDetail(content);
+          }catch(err){ showToast('Erro ao excluir.'); }
         } else {
           btn.setAttribute('data-armed','1');
           btn.querySelector('span').textContent='confirmar?';
@@ -647,122 +513,379 @@
       });
     });
   }
+  renderList();
 
-  // ---------- RESUMO ----------
-  var summaryMonth = todayISO().slice(0,7);
+  document.getElementById('addPurchase').addEventListener('click', async function(){
+    var desc = document.getElementById('pDesc').value.trim();
+    var date = document.getElementById('pDate').value || todayISO();
+    var value = Number(document.getElementById('pValue').value)||0;
+    if(!desc){ showToast('Informe o que foi comprado'); return; }
+    if(value<=0){ showToast('Informe o valor'); return; }
+    try{
+      await addDoc(collection(db,'purchases'), { description: desc, date: date, value: value });
+      showToast('Compra registrada!');
+      renderStock();
+    }catch(err){ showToast('Erro ao salvar.'); }
+  });
+}
 
-  function monthLabel(ym){
-    var d = new Date(Number(ym.slice(0,4)), Number(ym.slice(5,7))-1, 1);
-    var s = d.toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
-    return s.charAt(0).toUpperCase()+s.slice(1);
-  }
+// ---------- PACIENTES ----------
+function renderPatients(){
+  var content = document.getElementById('content');
+  if(selectedPatientId){ renderPatientDetail(content); return; }
 
-  function renderSummary(){
-    var content = document.getElementById('content');
-
-    var months = {};
-    state.treatments.forEach(function(t){ months[t.date.slice(0,7)] = true; });
-    state.purchases.forEach(function(p){ months[p.date.slice(0,7)] = true; });
-    months[summaryMonth] = true;
-    var monthKeys = Object.keys(months).sort().reverse();
-
-    function agg(treats, purchs){
-      var faturado=0, custoAtend=0, recebido=0;
-      treats.forEach(function(t){ faturado+=t.price; custoAtend+=t.totalCost; recebido+=t.paid; });
-      var custoEstoque = purchs.reduce(function(a,p){return a+p.value;},0);
-      var custo = custoAtend+custoEstoque;
-      return { faturado:faturado, custo:custo, recebido:recebido, lucro:faturado-custo, aReceber: faturado-recebido, qtd: treats.length };
-    }
-    var monthTreats = state.treatments.filter(function(t){ return t.date.slice(0,7)===summaryMonth; });
-    var monthPurchs = state.purchases.filter(function(p){ return p.date.slice(0,7)===summaryMonth; });
-    var monthAgg = agg(monthTreats, monthPurchs);
-    var totalAgg = agg(state.treatments, state.purchases);
-
-    function tiles(a){
-      return '<div class="stat-grid">' +
-        '<div class="stat-tile"><div class="label">Atendimentos</div><div class="value">'+a.qtd+'</div></div>' +
-        '<div class="stat-tile"><div class="label">Faturado</div><div class="value">'+fmtMoney(a.faturado)+'</div></div>' +
-        '<div class="stat-tile danger"><div class="label">Custos</div><div class="value">'+fmtMoney(a.custo)+'</div></div>' +
-        '<div class="stat-tile gold"><div class="label">Lucro estimado</div><div class="value">'+fmtMoney(a.lucro)+'</div></div>' +
-        '<div class="stat-tile accent"><div class="label">A receber</div><div class="value">'+fmtMoney(a.aReceber)+'</div></div>' +
+  var html = '<button class="btn secondary" id="newPatientBtn" style="margin-bottom:14px;">+ novo paciente</button>';
+  if(state.patients.length===0){
+    html += '<div class="empty-state">Nenhum paciente cadastrado ainda.<br>Use a Calculadora para registrar o primeiro atendimento, ou adicione um paciente aqui.</div>';
+  } else {
+    var sorted = state.patients.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+    html += sorted.map(function(p){
+      var bal = patientBalance(p.id);
+      var pillClass = bal.balance<=0.004 ? 'pago' : (bal.paid>0 ? 'parcial' : 'pendente');
+      var pillLabel = bal.balance<=0.004 ? 'em dia' : (bal.paid>0 ? 'parcial' : 'pendente');
+      return '<div class="patient-item" data-id="'+p.id+'">' +
+        '<div><div class="name">'+escapeHtml(p.name)+'</div><div class="sub">'+fmtMoney(bal.paid)+' recebido de '+fmtMoney(bal.charged)+'</div></div>' +
+        '<span class="pill '+pillClass+'">'+pillLabel+'</span>' +
       '</div>';
+    }).join('');
+  }
+  content.innerHTML = html;
+
+  document.getElementById('newPatientBtn').addEventListener('click', function(){ openNewPatientForm(); });
+  Array.prototype.forEach.call(content.querySelectorAll('.patient-item'), function(el){
+    el.addEventListener('click', function(){ selectedPatientId = el.getAttribute('data-id'); renderPatients(); });
+  });
+}
+
+function openNewPatientForm(){
+  var content = document.getElementById('content');
+  content.innerHTML =
+    '<div class="card">' +
+      '<h2 class="section-title">Novo paciente</h2>' +
+      '<div class="field"><label class="field-label">Nome</label><input type="text" id="npName" placeholder="Nome completo"></div>' +
+      '<div class="field"><label class="field-label">Telefone (opcional)</label><input type="tel" id="npPhone" placeholder="(00) 00000-0000"></div>' +
+      '<div class="field"><label class="field-label">Observações (opcional)</label><textarea id="npNotes" placeholder="Alergias, preferências, etc."></textarea></div>' +
+      '<button class="btn" id="npSave">Salvar paciente</button>' +
+      '<button class="btn secondary" id="npCancel" style="margin-top:8px;">Cancelar</button>' +
+    '</div>';
+  document.getElementById('npCancel').addEventListener('click', renderPatients);
+  document.getElementById('npSave').addEventListener('click', async function(){
+    var name = document.getElementById('npName').value.trim();
+    if(!name){ showToast('Informe o nome'); return; }
+    try{
+      await addDoc(collection(db,'patients'), { name:name, phone: document.getElementById('npPhone').value.trim(),
+        notes: document.getElementById('npNotes').value.trim(), createdAt: todayISO() });
+      showToast('Paciente adicionado!');
+      renderPatients();
+    }catch(err){ showToast('Erro ao salvar.'); }
+  });
+}
+
+function renderPatientDetail(content){
+  var p = state.patients.filter(function(x){return x.id===selectedPatientId;})[0];
+  if(!p){ selectedPatientId=null; renderPatients(); return; }
+  var bal = patientBalance(p.id);
+  var treatments = patientTreatments(p.id);
+
+  var html = '<div class="back-row" id="backBtn">'+ICONS.back+'<span>Pacientes</span></div>';
+  html += '<div class="card">' +
+    '<h2 class="section-title">'+escapeHtml(p.name)+'</h2>' +
+    (p.phone ? '<p class="helper-text" style="margin-bottom:6px;">'+escapeHtml(p.phone)+'</p>' : '') +
+    (p.notes ? '<p class="helper-text">'+escapeHtml(p.notes)+'</p>' : '') +
+    '<div class="stat-grid" style="margin-top:8px;margin-bottom:0;">' +
+      '<div class="stat-tile accent"><div class="label">Recebido</div><div class="value">'+fmtMoney(bal.paid)+'</div></div>' +
+      '<div class="stat-tile '+(bal.balance>0.004?'danger':'')+'"><div class="label">Saldo</div><div class="value">'+fmtMoney(bal.balance)+'</div></div>' +
+    '</div>' +
+    '<button class="btn danger" id="delPatientBtn" style="margin-top:12px;">Excluir paciente</button>' +
+  '</div>';
+
+  html += '<h2 class="section-title">Histórico de atendimentos</h2>';
+  if(treatments.length===0){
+    html += '<div class="empty-state">Nenhum atendimento registrado ainda.</div>';
+  } else {
+    html += treatments.map(function(t){
+      var tbal = t.price - t.paid;
+      var statusClass = tbal<=0.004 ? 'pago' : (t.paid>0?'parcial':'pendente');
+      var statusLabel = tbal<=0.004 ? 'pago' : (t.paid>0?'parcial':'pendente');
+      return '<div class="treat-item" data-id="'+t.id+'">' +
+        '<div class="top"><div><div class="desc">'+escapeHtml(t.description)+'</div><div class="date">'+fmtDate(t.date)+'</div></div>' +
+        '<span class="pill '+statusClass+'">'+statusLabel+'</span></div>' +
+        '<div class="figures">' +
+          '<div>Custo<b>'+fmtMoney(t.totalCost)+'</b></div>' +
+          '<div>Cobrado<b>'+fmtMoney(t.price)+'</b></div>' +
+          '<div>Recebido<b>'+fmtMoney(t.paid)+'</b></div>' +
+        '</div>' +
+        (tbal>0.004 ? (
+          '<div class="inline-pay">' +
+            '<input type="number" class="payInput" min="0" step="0.01" placeholder="Valor recebido">' +
+            '<button class="link-btn registerPay" data-id="'+t.id+'">registrar</button>' +
+          '</div>'
+        ) : '') +
+        '<button class="icon-btn delTreat" data-id="'+t.id+'" style="margin-top:6px;">'+ICONS.trash+' <span style="font-size:.74rem;margin-left:4px;">excluir</span></button>' +
+      '</div>';
+    }).join('');
+  }
+  content.innerHTML = html;
+
+  document.getElementById('backBtn').addEventListener('click', function(){ selectedPatientId=null; renderPatients(); });
+
+  var delBtn = document.getElementById('delPatientBtn');
+  delBtn.addEventListener('click', async function(){
+    if(delBtn.getAttribute('data-armed')==='1'){
+      try{
+        var batch = writeBatch(db);
+        batch.delete(doc(db,'patients',p.id));
+        patientTreatments(p.id).forEach(function(t){ batch.delete(doc(db,'treatments',t.id)); });
+        await batch.commit();
+        selectedPatientId = null;
+        showToast('Paciente excluído');
+        renderPatients();
+      }catch(err){ showToast('Erro ao excluir.'); }
+    } else {
+      delBtn.setAttribute('data-armed','1');
+      delBtn.textContent = 'Confirmar exclusão?';
+      setTimeout(function(){ delBtn.setAttribute('data-armed','0'); delBtn.textContent='Excluir paciente'; }, 4000);
     }
+  });
 
-    content.innerHTML =
-      '<div class="field"><label class="field-label">Ver mês</label>' +
-        '<select id="summaryMonthSelect">'+monthKeys.map(function(k){
-          return '<option value="'+k+'"'+(k===summaryMonth?' selected':'')+'>'+monthLabel(k)+'</option>';
-        }).join('')+'</select>' +
-      '</div>' +
-      tiles(monthAgg) +
-      '<h2 class="section-title">Total (todo período)</h2>' + tiles(totalAgg) +
-      '<p class="helper-text">Lucro estimado = faturado − custos (materiais + sala dos atendimentos + compras de estoque). "A receber" considera atendimentos já cobrados mas ainda não pagos integralmente.</p>';
-
-    document.getElementById('summaryMonthSelect').addEventListener('change', function(e){
-      summaryMonth = e.target.value;
-      renderSummary();
+  Array.prototype.forEach.call(content.querySelectorAll('.registerPay'), function(btn){
+    btn.addEventListener('click', async function(){
+      var row = btn.closest('.inline-pay');
+      var val = Number(row.querySelector('.payInput').value)||0;
+      if(val<=0){ showToast('Informe um valor'); return; }
+      var t = state.treatments.filter(function(x){return x.id===btn.getAttribute('data-id');})[0];
+      try{
+        await updateDoc(doc(db,'treatments', t.id), { paid: t.paid + val });
+        showToast('Pagamento registrado!');
+        renderPatientDetail(content);
+      }catch(err){ showToast('Erro ao registrar.'); }
     });
-  }
-
-  // ---------- AJUSTES ----------
-  function renderSettings(){
-    var content = document.getElementById('content');
-    content.innerHTML =
-      '<div class="card">' +
-        '<div class="field"><label class="field-label">Custo padrão da sala por atendimento</label>' +
-          '<input type="number" id="sRoom" min="0" step="0.01" value="'+(state.settings.defaultRoomCost||'')+'"></div>' +
-        '<p class="helper-text">Esse valor entra pré-preenchido em cada novo atendimento (dá pra ajustar na hora, se precisar).</p>' +
-        '<div class="field" style="margin-bottom:0;"><label class="field-label">Margem de lucro padrão (%)</label>' +
-          '<input type="number" id="sMargin" min="0" max="95" step="1" value="'+state.settings.defaultMargin+'"></div>' +
-      '</div>' +
-      '<div class="card">' +
-        '<h2 class="section-title">Backup dos dados</h2>' +
-        '<p class="helper-text">Os dados ficam salvos apenas neste navegador/celular — não há nuvem envolvida. Exporte um backup de vez em quando e guarde em algum lugar seguro (e-mail, Drive) — se limpar o navegador ou trocar de aparelho, você vai precisar dele para restaurar.</p>' +
-        '<button class="btn secondary" id="exportBtn" style="margin-bottom:8px;">Exportar backup</button>' +
-        '<input type="file" id="importFile" accept="application/json" style="display:none;">' +
-        '<button class="btn secondary" id="importBtn">Importar backup</button>' +
-      '</div>';
-
-    function persistSettings(){
-      state.settings.defaultRoomCost = Number(document.getElementById('sRoom').value)||0;
-      state.settings.defaultMargin = clamp(Number(document.getElementById('sMargin').value)||0,0,95);
-      saveState();
-    }
-    document.getElementById('sRoom').addEventListener('input', persistSettings);
-    document.getElementById('sMargin').addEventListener('input', persistSettings);
-
-    document.getElementById('exportBtn').addEventListener('click', function(){
-      var data = JSON.stringify(state, null, 2);
-      var filename = 'backup-consultorio-'+todayISO()+'.json';
-      if(window.claude && window.claude.downloads){
-        window.claude.downloads.save({ filename: filename, data: data }).catch(function(){ showToast('Não foi possível salvar o backup'); });
+  });
+  Array.prototype.forEach.call(content.querySelectorAll('.delTreat'), function(btn){
+    btn.addEventListener('click', async function(){
+      if(btn.getAttribute('data-armed')==='1'){
+        try{
+          await deleteDoc(doc(db,'treatments', btn.getAttribute('data-id')));
+          showToast('Atendimento excluído');
+          renderPatientDetail(content);
+        }catch(err){ showToast('Erro ao excluir.'); }
       } else {
-        showToast('Backup indisponível neste ambiente');
+        btn.setAttribute('data-armed','1');
+        btn.querySelector('span').textContent='confirmar?';
+        setTimeout(function(){ if(btn.isConnected){btn.setAttribute('data-armed','0'); btn.querySelector('span').textContent='excluir';} }, 4000);
       }
     });
-    var importFile = document.getElementById('importFile');
-    document.getElementById('importBtn').addEventListener('click', function(){ importFile.click(); });
-    importFile.addEventListener('change', function(){
-      var file = importFile.files[0];
-      if(!file) return;
-      var reader = new FileReader();
-      reader.onload = function(){
-        try{
-          var parsed = JSON.parse(reader.result);
-          parsed.settings = parsed.settings || { defaultRoomCost:0, defaultMargin:30 };
-          parsed.patients = parsed.patients || [];
-          parsed.treatments = parsed.treatments || [];
-          parsed.purchases = parsed.purchases || [];
-          state = parsed;
-          saveState();
-          showToast('Backup importado!');
-          renderSettings();
-        }catch(e){ showToast('Arquivo inválido'); }
-      };
-      reader.readAsText(file);
-    });
+  });
+}
+
+// ---------- RESUMO ----------
+var summaryMonth = todayISO().slice(0,7);
+
+function monthLabel(ym){
+  var d = new Date(Number(ym.slice(0,4)), Number(ym.slice(5,7))-1, 1);
+  var s = d.toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+function renderSummary(){
+  var content = document.getElementById('content');
+
+  var months = {};
+  state.treatments.forEach(function(t){ months[t.date.slice(0,7)] = true; });
+  state.purchases.forEach(function(p){ months[p.date.slice(0,7)] = true; });
+  months[summaryMonth] = true;
+  var monthKeys = Object.keys(months).sort().reverse();
+
+  function agg(treats, purchs){
+    var faturado=0, custoAtend=0, recebido=0;
+    treats.forEach(function(t){ faturado+=t.price; custoAtend+=t.totalCost; recebido+=t.paid; });
+    var custoEstoque = purchs.reduce(function(a,p){return a+p.value;},0);
+    var custo = custoAtend+custoEstoque;
+    return { faturado:faturado, custo:custo, recebido:recebido, lucro:faturado-custo, aReceber: faturado-recebido, qtd: treats.length };
+  }
+  var monthTreats = state.treatments.filter(function(t){ return t.date.slice(0,7)===summaryMonth; });
+  var monthPurchs = state.purchases.filter(function(p){ return p.date.slice(0,7)===summaryMonth; });
+  var monthAgg = agg(monthTreats, monthPurchs);
+  var totalAgg = agg(state.treatments, state.purchases);
+
+  function tiles(a){
+    return '<div class="stat-grid">' +
+      '<div class="stat-tile"><div class="label">Atendimentos</div><div class="value">'+a.qtd+'</div></div>' +
+      '<div class="stat-tile"><div class="label">Faturado</div><div class="value">'+fmtMoney(a.faturado)+'</div></div>' +
+      '<div class="stat-tile danger"><div class="label">Custos</div><div class="value">'+fmtMoney(a.custo)+'</div></div>' +
+      '<div class="stat-tile gold"><div class="label">Lucro estimado</div><div class="value">'+fmtMoney(a.lucro)+'</div></div>' +
+      '<div class="stat-tile accent"><div class="label">A receber</div><div class="value">'+fmtMoney(a.aReceber)+'</div></div>' +
+    '</div>';
   }
 
+  content.innerHTML =
+    '<div class="field"><label class="field-label">Ver mês</label>' +
+      '<select id="summaryMonthSelect">'+monthKeys.map(function(k){
+        return '<option value="'+k+'"'+(k===summaryMonth?' selected':'')+'>'+monthLabel(k)+'</option>';
+      }).join('')+'</select>' +
+    '</div>' +
+    tiles(monthAgg) +
+    '<h2 class="section-title">Total (todo período)</h2>' + tiles(totalAgg) +
+    '<p class="helper-text">Lucro estimado = faturado − custos (materiais + sala dos atendimentos + compras de estoque). "A receber" considera atendimentos já cobrados mas ainda não pagos integralmente.</p>';
+
+  document.getElementById('summaryMonthSelect').addEventListener('change', function(e){
+    summaryMonth = e.target.value;
+    renderSummary();
+  });
+}
+
+// ---------- AJUSTES ----------
+var settingsSaveTimer = null;
+
+function renderSettings(){
+  var content = document.getElementById('content');
+  content.innerHTML =
+    '<div class="card">' +
+      '<div class="field"><label class="field-label">Custo padrão da sala por atendimento</label>' +
+        '<input type="number" id="sRoom" min="0" step="0.01" value="'+(state.settings.defaultRoomCost||'')+'"></div>' +
+      '<p class="helper-text">Esse valor entra pré-preenchido em cada novo atendimento (dá pra ajustar na hora, se precisar).</p>' +
+      '<div class="field" style="margin-bottom:0;"><label class="field-label">Margem de lucro padrão (%)</label>' +
+        '<input type="number" id="sMargin" min="0" max="95" step="1" value="'+state.settings.defaultMargin+'"></div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<p class="helper-text" style="margin-bottom:8px;">Conectado como <b>'+escapeHtml(auth.currentUser ? auth.currentUser.email : '')+'</b></p>' +
+      '<button class="btn secondary" id="signOutBtn">Sair</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h2 class="section-title">Backup dos dados</h2>' +
+      '<p class="helper-text">Os dados ficam salvos na nuvem e sincronizam automaticamente em qualquer aparelho onde vocês entrarem com a conta Google autorizada. Esse backup aqui é só uma cópia extra de segurança, opcional.</p>' +
+      '<button class="btn secondary" id="exportBtn" style="margin-bottom:8px;">Exportar backup</button>' +
+      '<input type="file" id="importFile" accept="application/json" style="display:none;">' +
+      '<button class="btn secondary" id="importBtn">Importar backup</button>' +
+    '</div>';
+
+  function persistSettings(){
+    var room = Number(document.getElementById('sRoom').value)||0;
+    var margin = clamp(Number(document.getElementById('sMargin').value)||0,0,95);
+    state.settings.defaultRoomCost = room;
+    state.settings.defaultMargin = margin;
+    clearTimeout(settingsSaveTimer);
+    settingsSaveTimer = setTimeout(function(){
+      setDoc(doc(db,'settings','main'), { defaultRoomCost:room, defaultMargin:margin }).catch(function(){
+        showToast('Erro ao salvar ajustes.');
+      });
+    }, 500);
+  }
+  document.getElementById('sRoom').addEventListener('input', persistSettings);
+  document.getElementById('sMargin').addEventListener('input', persistSettings);
+
+  document.getElementById('signOutBtn').addEventListener('click', function(){ signOut(auth); });
+
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    var data = JSON.stringify(state, null, 2);
+    var filename = 'backup-consultorio-'+todayISO()+'.json';
+    if(window.claude && window.claude.downloads){
+      window.claude.downloads.save({ filename: filename, data: data }).catch(function(){ showToast('Não foi possível salvar o backup'); });
+    } else {
+      var blob = new Blob([data], {type:'application/json'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  });
+  var importFile = document.getElementById('importFile');
+  document.getElementById('importBtn').addEventListener('click', function(){ importFile.click(); });
+  importFile.addEventListener('change', function(){
+    var file = importFile.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = async function(){
+      try{
+        var parsed = JSON.parse(reader.result);
+        var batch = writeBatch(db);
+        (parsed.patients||[]).forEach(function(p){ var d=Object.assign({},p); var id=d.id; delete d.id; if(id) batch.set(doc(db,'patients', id), d); });
+        (parsed.treatments||[]).forEach(function(t){ var d=Object.assign({},t); var id=d.id; delete d.id; if(id) batch.set(doc(db,'treatments', id), d); });
+        (parsed.purchases||[]).forEach(function(x){ var d=Object.assign({},x); var id=d.id; delete d.id; if(id) batch.set(doc(db,'purchases', id), d); });
+        batch.set(doc(db,'settings','main'), parsed.settings || { defaultRoomCost:0, defaultMargin:30 });
+        await batch.commit();
+        showToast('Backup importado!');
+      }catch(e){ showToast('Arquivo inválido'); }
+    };
+    reader.readAsText(file);
+  });
+}
+
+// ---------- AUTENTICAÇÃO ----------
+var unsubscribers = [];
+function stopListeners(){ unsubscribers.forEach(function(u){ u(); }); unsubscribers = []; }
+
+function onDataChanged(){
+  if(activeTab==='calc') return;
+  var el = document.activeElement;
+  if(activeTab==='settings' && el && (el.id==='sRoom' || el.id==='sMargin')) return;
   renderAll();
-})();
+}
+
+function startListeners(){
+  unsubscribers.push(onSnapshot(collection(db,'patients'), function(snap){
+    state.patients = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    onDataChanged();
+  }));
+  unsubscribers.push(onSnapshot(collection(db,'treatments'), function(snap){
+    state.treatments = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    onDataChanged();
+  }));
+  unsubscribers.push(onSnapshot(collection(db,'purchases'), function(snap){
+    state.purchases = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    onDataChanged();
+  }));
+  unsubscribers.push(onSnapshot(doc(db,'settings','main'), function(snap){
+    state.settings = snap.exists() ? snap.data() : { defaultRoomCost:0, defaultMargin:30 };
+    onDataChanged();
+  }));
+  renderAll();
+}
+
+var loginScreen = document.getElementById('loginScreen');
+var appShell = document.getElementById('appShell');
+var loginStatus = document.getElementById('loginStatus');
+var googleBtn = document.getElementById('googleSignInBtn');
+var loginError = document.getElementById('loginError');
+
+googleBtn.addEventListener('click', function(){
+  var provider = new GoogleAuthProvider();
+  signInWithPopup(auth, provider).catch(function(err){
+    if(err && err.code==='auth/popup-blocked'){
+      signInWithRedirect(auth, provider);
+    } else if(err && err.code!=='auth/cancelled-popup-request' && err.code!=='auth/popup-closed-by-user'){
+      loginError.style.display='block';
+      loginError.textContent = 'Não foi possível entrar. Tenta de novo.';
+    }
+  });
+});
+
+getRedirectResult(auth).catch(function(){});
+
+onAuthStateChanged(auth, function(user){
+  if(!user){
+    stopListeners();
+    appShell.style.display='none';
+    loginScreen.style.display='flex';
+    loginStatus.textContent = 'Acesso restrito ao consultório.';
+    googleBtn.style.display='block';
+    return;
+  }
+  if(ALLOWED_EMAILS.indexOf(user.email)===-1){
+    stopListeners();
+    appShell.style.display='none';
+    loginScreen.style.display='flex';
+    loginStatus.textContent = '';
+    googleBtn.style.display='block';
+    loginError.style.display='block';
+    loginError.textContent = 'O e-mail '+user.email+' não tem acesso a este sistema.';
+    signOut(auth);
+    return;
+  }
+  loginError.style.display='none';
+  loginScreen.style.display='none';
+  appShell.style.display='flex';
+  startListeners();
+});
 </script>
