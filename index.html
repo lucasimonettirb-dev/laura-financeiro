@@ -1,0 +1,692 @@
+<title>Consultório em Dia</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  :root{
+    --bg:#F2F5F3;
+    --surface:#FFFFFF;
+    --surface-2:#EAF0EC;
+    --ink:#15262A;
+    --ink-muted:#5B6E70;
+    --border:#DEE5E0;
+    --accent:#2C6E62;
+    --accent-strong:#1B4D45;
+    --accent-soft:#DEEAE6;
+    --gold:#93711F;
+    --gold-soft:#F1E6D2;
+    --danger:#A8382F;
+    --danger-soft:#F5DEDA;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(21,38,42,.07),0 6px 18px rgba(21,38,42,.07);
+    --font-serif:Georgia,'Iowan Old Style','Palatino Linotype',serif;
+    --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#101718;
+      --surface:#172022;
+      --surface-2:#1C2628;
+      --ink:#E9EDEB;
+      --ink-muted:#96A5A4;
+      --border:#293436;
+      --accent:#5FB6A6;
+      --accent-strong:#86CEC0;
+      --accent-soft:#1E3733;
+      --gold:#D8AE6A;
+      --gold-soft:#332C1B;
+      --danger:#E28376;
+      --danger-soft:#3B2422;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#101718;--surface:#172022;--surface-2:#1C2628;--ink:#E9EDEB;--ink-muted:#96A5A4;
+    --border:#293436;--accent:#5FB6A6;--accent-strong:#86CEC0;--accent-soft:#1E3733;
+    --gold:#D8AE6A;--gold-soft:#332C1B;--danger:#E28376;--danger-soft:#3B2422;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#F2F5F3;--surface:#FFFFFF;--surface-2:#EAF0EC;--ink:#15262A;--ink-muted:#5B6E70;
+    --border:#DEE5E0;--accent:#2C6E62;--accent-strong:#1B4D45;--accent-soft:#DEEAE6;
+    --gold:#93711F;--gold-soft:#F1E6D2;--danger:#A8382F;--danger-soft:#F5DEDA;
+    --shadow:0 1px 2px rgba(21,38,42,.07),0 6px 18px rgba(21,38,42,.07);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  button,input,select,textarea{font-family:inherit;color:inherit;}
+  .app-shell{
+    max-width:480px;margin:0 auto;height:100dvh;height:100vh;display:flex;flex-direction:column;
+    background:var(--bg);position:relative;box-shadow:var(--shadow);
+  }
+  header.topbar{
+    flex-shrink:0;padding:18px 18px 14px;border-bottom:1px solid var(--border);
+    background:var(--surface);
+  }
+  header.topbar h1{
+    font-family:var(--font-serif);font-size:1.28rem;margin:0 0 2px;font-weight:600;
+    letter-spacing:.01em;text-wrap:balance;
+  }
+  header.topbar p{margin:0;font-size:.8rem;color:var(--ink-muted);}
+  main.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 28px;}
+  nav.tabbar{
+    flex-shrink:0;display:flex;border-top:1px solid var(--border);background:var(--surface);
+    padding-bottom:env(safe-area-inset-bottom,0);
+  }
+  nav.tabbar button{
+    flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;
+    gap:3px;padding:9px 2px 8px;cursor:pointer;color:var(--ink-muted);font-size:.68rem;
+    letter-spacing:.01em;
+  }
+  nav.tabbar button svg{width:21px;height:21px;}
+  nav.tabbar button.active{color:var(--accent-strong);font-weight:700;}
+  nav.tabbar button:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible{
+    outline:2px solid var(--accent);outline-offset:1px;
+  }
+
+  h2.section-title{font-family:var(--font-serif);font-size:1.12rem;font-weight:600;margin:0 0 12px;text-wrap:balance;}
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px;margin-bottom:12px;
+  }
+  .notice{
+    background:var(--accent-soft);border:1px solid var(--accent);color:var(--accent-strong);
+    border-radius:var(--radius);padding:11px 13px;font-size:.83rem;margin-bottom:14px;line-height:1.4;
+  }
+  .notice button{background:var(--accent-strong);color:var(--surface);border:none;border-radius:8px;
+    padding:6px 10px;font-size:.78rem;font-weight:600;margin-top:8px;cursor:pointer;}
+
+  label.field-label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--ink-muted);margin:0 0 5px;font-weight:600;}
+  .field{margin-bottom:12px;}
+  input[type=text],input[type=number],input[type=date],input[type=tel],select,textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);
+    font-size:.92rem;color:var(--ink);
+  }
+  textarea{resize:vertical;min-height:52px;}
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .material-row{display:grid;grid-template-columns:1fr 96px 30px;gap:8px;align-items:center;margin-bottom:7px;}
+  .material-row input{padding:8px 9px;}
+  .icon-btn{background:none;border:none;color:var(--ink-muted);cursor:pointer;padding:4px;
+    display:flex;align-items:center;justify-content:center;}
+  .icon-btn svg{width:17px;height:17px;}
+  .link-btn{background:none;border:none;color:var(--accent-strong);font-weight:600;font-size:.85rem;
+    padding:6px 2px;cursor:pointer;}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:11px 14px;
+    font-size:.92rem;font-weight:700;cursor:pointer;width:100%;}
+  .btn.secondary{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);}
+  .btn.danger{background:var(--danger);}
+  .btn[data-armed="1"]{background:var(--danger);}
+
+  .totals{border-top:1px dashed var(--border);margin-top:6px;padding-top:10px;display:flex;flex-direction:column;gap:6px;}
+  .totals .line{display:flex;justify-content:space-between;font-size:.86rem;color:var(--ink-muted);}
+  .totals .line span:last-child{font-variant-numeric:tabular-nums;color:var(--ink);}
+  .totals .line.big{font-size:1.05rem;font-weight:700;color:var(--ink);border-top:1px solid var(--border);padding-top:8px;margin-top:2px;}
+  .totals .line.big span:last-child{color:var(--accent-strong);}
+  .totals .line.profit span:last-child{color:var(--gold);}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  .stat-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 13px;}
+  .stat-tile .label{font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-muted);font-weight:600;}
+  .stat-tile .value{font-family:var(--font-sans);font-size:1.28rem;font-weight:700;font-variant-numeric:tabular-nums;
+    margin-top:3px;}
+  .stat-tile.gold .value{color:var(--gold);}
+  .stat-tile.accent .value{color:var(--accent-strong);}
+  .stat-tile.danger .value{color:var(--danger);}
+
+  .patient-item{display:flex;justify-content:space-between;align-items:center;background:var(--surface);
+    border:1px solid var(--border);border-radius:var(--radius);padding:12px 13px;margin-bottom:9px;cursor:pointer;}
+  .patient-item .name{font-weight:700;font-size:.94rem;}
+  .patient-item .sub{font-size:.76rem;color:var(--ink-muted);margin-top:2px;}
+  .pill{font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:99px;letter-spacing:.02em;}
+  .pill.pago{background:var(--accent-soft);color:var(--accent-strong);}
+  .pill.parcial{background:var(--gold-soft);color:var(--gold);}
+  .pill.pendente{background:var(--danger-soft);color:var(--danger);}
+
+  .treat-item{border:1px solid var(--border);border-radius:var(--radius);padding:12px 13px;margin-bottom:10px;background:var(--surface);}
+  .treat-item .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;}
+  .treat-item .desc{font-weight:700;font-size:.9rem;}
+  .treat-item .date{font-size:.74rem;color:var(--ink-muted);}
+  .treat-item .figures{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:.75rem;color:var(--ink-muted);margin-top:8px;}
+  .treat-item .figures b{display:block;font-size:.86rem;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .back-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;color:var(--accent-strong);font-weight:600;font-size:.88rem;}
+  .back-row svg{width:18px;height:18px;}
+
+  .fixedcost-row{display:grid;grid-template-columns:1fr 100px 28px;gap:8px;align-items:center;margin-bottom:7px;}
+  .fixedcost-row input{padding:8px 9px;}
+  .empty-state{text-align:center;color:var(--ink-muted);font-size:.85rem;padding:24px 10px;}
+  .toast{
+    position:absolute;left:50%;bottom:88px;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+    padding:9px 16px;border-radius:99px;font-size:.82rem;font-weight:600;box-shadow:var(--shadow);
+    opacity:0;pointer-events:none;transition:opacity .25s ease, bottom .25s ease;z-index:50;white-space:nowrap;
+  }
+  .toast.show{opacity:1;bottom:96px;}
+  .segment{display:flex;background:var(--surface-2);border-radius:10px;padding:3px;margin-bottom:14px;}
+  .segment button{flex:1;border:none;background:none;padding:7px 4px;border-radius:8px;font-size:.8rem;
+    font-weight:600;color:var(--ink-muted);cursor:pointer;}
+  .segment button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .helper-text{font-size:.76rem;color:var(--ink-muted);margin-top:-6px;margin-bottom:12px;line-height:1.4;}
+  .inline-pay{display:flex;gap:8px;margin-top:9px;}
+  .inline-pay input{flex:1;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none!important;} }
+</style>
+
+<div class="app-shell">
+  <header class="topbar">
+    <h1 id="pageTitle">Calculadora</h1>
+    <p id="pageSubtitle">Custo e preço do atendimento</p>
+  </header>
+  <main class="content" id="content"></main>
+  <nav class="tabbar" id="tabbar"></nav>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var STORAGE_KEY = "consultorio_financeiro_v1";
+  var ICONS = {
+    calc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="8" y2="12.01"/><line x1="12" y1="12" x2="12" y2="12.01"/><line x1="16" y1="12" x2="16" y2="12.01"/><line x1="8" y1="16" x2="8" y2="16.01"/><line x1="12" y1="16" x2="12" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/></svg>',
+    users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20v-1a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v1"/><circle cx="10" cy="7" r="3.2"/><path d="M22 20v-1a3.8 3.8 0 0 0-2.7-3.65"/><path d="M15.2 4.2A3.8 3.8 0 0 1 17 11"/></svg>',
+    chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"/><line x1="12" y1="21" x2="12" y2="6"/><line x1="19" y1="21" x2="19" y2="14"/><line x1="3" y1="21" x2="21" y2="21"/></svg>',
+    gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.04.04a2 2 0 1 1-2.83 2.83l-.04-.04a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.06a1.65 1.65 0 0 0-1.09-1.51 1.65 1.65 0 0 0-1.82.33l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4a2 2 0 1 1 0-4h.06a1.65 1.65 0 0 0 1.51-1.09 1.65 1.65 0 0 0-.33-1.82l-.04-.04a2 2 0 1 1 2.83-2.83l.04.04a1.65 1.65 0 0 0 1.82.33H10a1.65 1.65 0 0 0 1-1.51V4a2 2 0 1 1 4 0v.06a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04a1.65 1.65 0 0 0-.33 1.82V10a1.65 1.65 0 0 0 1.51 1H20a2 2 0 1 1 0 4h-.06a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+    back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
+    plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+  };
+
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function r2(v){ return Math.round((Number(v)||0)*100)/100; }
+  function fmtMoney(v){ v = r2(v); if(Math.abs(v)<0.005) v = 0; return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+  function fmtDate(iso){ if(!iso) return ''; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+  function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function clamp(n,min,max){ return Math.min(max,Math.max(min,n)); }
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        parsed.settings = parsed.settings || {};
+        parsed.settings.fixedCosts = parsed.settings.fixedCosts || [];
+        parsed.settings.hoursPerMonth = parsed.settings.hoursPerMonth || 0;
+        parsed.settings.defaultMargin = (parsed.settings.defaultMargin==null) ? 30 : parsed.settings.defaultMargin;
+        parsed.patients = parsed.patients || [];
+        parsed.treatments = parsed.treatments || [];
+        return parsed;
+      }
+    }catch(e){}
+    return { settings:{ fixedCosts:[], hoursPerMonth:0, defaultMargin:30 }, patients:[], treatments:[] };
+  }
+  var state = loadState();
+  function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+  function costPerHour(){
+    var sum = state.settings.fixedCosts.reduce(function(a,c){ return a + (Number(c.value)||0); }, 0);
+    var hrs = Number(state.settings.hoursPerMonth)||0;
+    if(hrs<=0) return 0;
+    return sum/hrs;
+  }
+  function settingsConfigured(){
+    return state.settings.fixedCosts.length>0 && Number(state.settings.hoursPerMonth)>0;
+  }
+
+  function findPatientByName(name){
+    var n = name.trim().toLowerCase();
+    return state.patients.filter(function(p){ return p.name.trim().toLowerCase()===n; })[0];
+  }
+  function patientTreatments(pid){
+    return state.treatments.filter(function(t){ return t.patientId===pid; }).sort(function(a,b){ return b.date.localeCompare(a.date); });
+  }
+  function patientBalance(pid){
+    var ts = patientTreatments(pid);
+    var charged=0, paid=0;
+    ts.forEach(function(t){ charged+=t.price; paid+=t.paid; });
+    return { charged:charged, paid:paid, balance:charged-paid };
+  }
+
+  var activeTab = 'calc';
+  var selectedPatientId = null;
+  var calcTouchedPrice = false;
+
+  var TABS = [
+    {id:'calc', label:'Calcular', icon:'calc', title:'Calculadora', subtitle:'Custo e preço do atendimento'},
+    {id:'patients', label:'Pacientes', icon:'users', title:'Pacientes', subtitle:'Histórico e pagamentos'},
+    {id:'summary', label:'Resumo', icon:'chart', title:'Resumo financeiro', subtitle:'Faturamento, custos e lucro'},
+    {id:'settings', label:'Ajustes', icon:'gear', title:'Ajustes', subtitle:'Custos fixos e margem padrão'}
+  ];
+
+  function renderTabbar(){
+    var el = document.getElementById('tabbar');
+    el.innerHTML = TABS.map(function(t){
+      return '<button data-tab="'+t.id+'" class="'+(activeTab===t.id?'active':'')+'">'+ICONS[t.icon]+'<span>'+t.label+'</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(el.querySelectorAll('button'), function(btn){
+      btn.addEventListener('click', function(){
+        activeTab = btn.getAttribute('data-tab');
+        selectedPatientId = null;
+        renderAll();
+      });
+    });
+  }
+
+  function setHeader(title, subtitle){
+    document.getElementById('pageTitle').textContent = title;
+    document.getElementById('pageSubtitle').textContent = subtitle;
+  }
+
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+  }
+
+  function renderAll(){
+    renderTabbar();
+    var meta = TABS.filter(function(t){return t.id===activeTab;})[0];
+    setHeader(meta.title, meta.subtitle);
+    if(activeTab==='calc') renderCalc();
+    else if(activeTab==='patients') renderPatients();
+    else if(activeTab==='summary') renderSummary();
+    else if(activeTab==='settings') renderSettings();
+  }
+
+  // ---------- CALCULADORA ----------
+  function renderCalc(){
+    calcTouchedPrice = false;
+    var content = document.getElementById('content');
+    var cph = costPerHour();
+    var configuredNotice = settingsConfigured() ? '' :
+      '<div class="notice">Você ainda não configurou seus custos fixos (aluguel, energia, equipe...). '+
+      'Sem isso, o rateio por hora não entra na conta. <button id="goSettings">Configurar agora</button></div>';
+
+    content.innerHTML =
+      configuredNotice +
+      '<div class="card">' +
+        '<div class="field"><label class="field-label">Paciente</label>' +
+          '<input type="text" id="fPatient" list="patientDatalist" placeholder="Nome do paciente" autocomplete="off">' +
+          '<datalist id="patientDatalist">'+state.patients.map(function(p){return '<option value="'+escapeHtml(p.name)+'">';}).join('')+'</datalist>' +
+        '</div>' +
+        '<div class="field"><label class="field-label">Procedimento</label>' +
+          '<input type="text" id="fDesc" placeholder="Ex: Restauração, Limpeza, Extração...">' +
+        '</div>' +
+        '<div class="row-2">' +
+          '<div class="field"><label class="field-label">Data</label><input type="date" id="fDate" value="'+todayISO()+'"></div>' +
+          '<div class="field"><label class="field-label">Tempo gasto (horas)</label><input type="number" id="fHours" min="0" step="0.25" value="1"></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<label class="field-label" style="margin-bottom:8px;">Materiais e insumos usados</label>' +
+        '<div id="materialsList"></div>' +
+        '<button type="button" class="link-btn" id="addMaterial">+ adicionar material</button>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<div class="field" style="margin-bottom:8px;"><label class="field-label">Margem de lucro desejada (%)</label>' +
+          '<input type="number" id="fMargin" min="0" max="95" step="1" value="'+(state.settings.defaultMargin||30)+'">' +
+        '</div>' +
+        '<p class="helper-text">Esse é o percentual do preço final que sobra de lucro, depois de cobrir materiais e o custo fixo rateado (custo/hora atual: <b>'+fmtMoney(cph)+'</b>).</p>' +
+        '<div class="totals">' +
+          '<div class="line"><span>Custo com materiais</span><span id="sumMaterials">'+fmtMoney(0)+'</span></div>' +
+          '<div class="line"><span>Custo fixo rateado</span><span id="sumFixed">'+fmtMoney(0)+'</span></div>' +
+          '<div class="line"><span>Custo total</span><span id="sumCusto">'+fmtMoney(0)+'</span></div>' +
+          '<div class="line profit"><span>Lucro estimado</span><span id="sumLucro">'+fmtMoney(0)+'</span></div>' +
+          '<div class="line big"><span>Preço sugerido</span><span id="sumPreco">'+fmtMoney(0)+'</span></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<div class="row-2">' +
+          '<div class="field"><label class="field-label">Valor a cobrar</label><input type="number" id="fPrice" min="0" step="0.01" value="0"></div>' +
+          '<div class="field"><label class="field-label">Já recebido agora</label><input type="number" id="fPaidNow" min="0" step="0.01" value="0"></div>' +
+        '</div>' +
+        '<button class="btn" id="saveTreatment">Salvar atendimento</button>' +
+      '</div>';
+
+    document.getElementById('goSettings') && document.getElementById('goSettings').addEventListener('click', function(){
+      activeTab='settings'; renderAll();
+    });
+
+    var materialsList = document.getElementById('materialsList');
+    function addMaterialRow(name, cost){
+      var row = document.createElement('div');
+      row.className = 'material-row';
+      row.innerHTML =
+        '<input type="text" class="mName" placeholder="Ex: resina, anestesia..." value="'+escapeHtml(name||'')+'">' +
+        '<input type="number" class="mCost" placeholder="R$" min="0" step="0.01" value="'+(cost||'')+'">' +
+        '<button type="button" class="icon-btn removeMaterial">'+ICONS.trash+'</button>';
+      materialsList.appendChild(row);
+      row.querySelector('.removeMaterial').addEventListener('click', function(){ row.remove(); updateTotals(); });
+      row.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', updateTotals); });
+    }
+    addMaterialRow('', '');
+    document.getElementById('addMaterial').addEventListener('click', function(){ addMaterialRow('',''); });
+
+    function getMaterials(){
+      return Array.prototype.map.call(materialsList.querySelectorAll('.material-row'), function(row){
+        return { label: row.querySelector('.mName').value.trim(), cost: Number(row.querySelector('.mCost').value)||0 };
+      }).filter(function(m){ return m.label || m.cost; });
+    }
+
+    var priceInput = document.getElementById('fPrice');
+    priceInput.addEventListener('input', function(){ calcTouchedPrice = true; });
+
+    function updateTotals(){
+      var materialsSum = getMaterials().reduce(function(a,m){return a+m.cost;},0);
+      var hours = Number(document.getElementById('fHours').value)||0;
+      var margin = clamp(Number(document.getElementById('fMargin').value)||0, 0, 95);
+      var fixedShare = costPerHour()*hours;
+      var custoTotal = materialsSum + fixedShare;
+      var price = margin>=95 ? custoTotal/0.05 : custoTotal/(1-margin/100);
+      var lucro = price - custoTotal;
+      document.getElementById('sumMaterials').textContent = fmtMoney(materialsSum);
+      document.getElementById('sumFixed').textContent = fmtMoney(fixedShare);
+      document.getElementById('sumCusto').textContent = fmtMoney(custoTotal);
+      document.getElementById('sumLucro').textContent = fmtMoney(lucro);
+      document.getElementById('sumPreco').textContent = fmtMoney(price);
+      if(!calcTouchedPrice){ priceInput.value = price.toFixed(2); }
+      return { materialsSum:materialsSum, fixedShare:fixedShare, custoTotal:custoTotal, margin:margin, price:price };
+    }
+    document.getElementById('fHours').addEventListener('input', updateTotals);
+    document.getElementById('fMargin').addEventListener('input', updateTotals);
+    updateTotals();
+
+    document.getElementById('saveTreatment').addEventListener('click', function(){
+      var name = document.getElementById('fPatient').value.trim();
+      if(!name){ showToast('Informe o nome do paciente'); return; }
+      var desc = document.getElementById('fDesc').value.trim() || 'Atendimento';
+      var date = document.getElementById('fDate').value || todayISO();
+      var hours = Number(document.getElementById('fHours').value)||0;
+      var materials = getMaterials();
+      var totals = updateTotals();
+      var price = Number(priceInput.value)||0;
+      var paidNow = Number(document.getElementById('fPaidNow').value)||0;
+
+      var patient = findPatientByName(name);
+      if(!patient){
+        patient = { id: uid(), name: name, phone:'', notes:'', createdAt: todayISO() };
+        state.patients.push(patient);
+      }
+      state.treatments.push({
+        id: uid(), patientId: patient.id, date: date, description: desc,
+        materials: materials, timeHours: hours, fixedCostPerHour: costPerHour(),
+        materialsCost: totals.materialsSum, fixedCost: totals.fixedShare, totalCost: totals.custoTotal,
+        margin: totals.margin, price: price, paid: paidNow
+      });
+      saveState();
+      showToast('Atendimento salvo!');
+      renderCalc();
+    });
+  }
+
+  // ---------- PACIENTES ----------
+  function renderPatients(){
+    var content = document.getElementById('content');
+    if(selectedPatientId){ renderPatientDetail(content); return; }
+
+    var html = '<button class="btn secondary" id="newPatientBtn" style="margin-bottom:14px;">+ novo paciente</button>';
+    if(state.patients.length===0){
+      html += '<div class="empty-state">Nenhum paciente cadastrado ainda.<br>Use a Calculadora para registrar o primeiro atendimento, ou adicione um paciente aqui.</div>';
+    } else {
+      var sorted = state.patients.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+      html += sorted.map(function(p){
+        var bal = patientBalance(p.id);
+        var pillClass = bal.balance<=0.004 ? 'pago' : (bal.paid>0 ? 'parcial' : 'pendente');
+        var pillLabel = bal.balance<=0.004 ? 'em dia' : (bal.paid>0 ? 'parcial' : 'pendente');
+        return '<div class="patient-item" data-id="'+p.id+'">' +
+          '<div><div class="name">'+escapeHtml(p.name)+'</div><div class="sub">'+fmtMoney(bal.paid)+' recebido de '+fmtMoney(bal.charged)+'</div></div>' +
+          '<span class="pill '+pillClass+'">'+pillLabel+'</span>' +
+        '</div>';
+      }).join('');
+    }
+    content.innerHTML = html;
+
+    document.getElementById('newPatientBtn').addEventListener('click', function(){
+      var name = window.prompt ? '' : '';
+      openNewPatientForm();
+    });
+    Array.prototype.forEach.call(content.querySelectorAll('.patient-item'), function(el){
+      el.addEventListener('click', function(){ selectedPatientId = el.getAttribute('data-id'); renderPatients(); });
+    });
+  }
+
+  function openNewPatientForm(){
+    var content = document.getElementById('content');
+    content.innerHTML =
+      '<div class="card">' +
+        '<h2 class="section-title">Novo paciente</h2>' +
+        '<div class="field"><label class="field-label">Nome</label><input type="text" id="npName" placeholder="Nome completo"></div>' +
+        '<div class="field"><label class="field-label">Telefone (opcional)</label><input type="tel" id="npPhone" placeholder="(00) 00000-0000"></div>' +
+        '<div class="field"><label class="field-label">Observações (opcional)</label><textarea id="npNotes" placeholder="Alergias, preferências, etc."></textarea></div>' +
+        '<button class="btn" id="npSave">Salvar paciente</button>' +
+        '<button class="btn secondary" id="npCancel" style="margin-top:8px;">Cancelar</button>' +
+      '</div>';
+    document.getElementById('npCancel').addEventListener('click', renderPatients);
+    document.getElementById('npSave').addEventListener('click', function(){
+      var name = document.getElementById('npName').value.trim();
+      if(!name){ showToast('Informe o nome'); return; }
+      var p = { id: uid(), name:name, phone: document.getElementById('npPhone').value.trim(),
+        notes: document.getElementById('npNotes').value.trim(), createdAt: todayISO() };
+      state.patients.push(p);
+      saveState();
+      showToast('Paciente adicionado!');
+      renderPatients();
+    });
+  }
+
+  function renderPatientDetail(content){
+    var p = state.patients.filter(function(x){return x.id===selectedPatientId;})[0];
+    if(!p){ selectedPatientId=null; renderPatients(); return; }
+    var bal = patientBalance(p.id);
+    var treatments = patientTreatments(p.id);
+
+    var html = '<div class="back-row" id="backBtn">'+ICONS.back+'<span>Pacientes</span></div>';
+    html += '<div class="card">' +
+      '<h2 class="section-title">'+escapeHtml(p.name)+'</h2>' +
+      (p.phone ? '<p class="helper-text" style="margin-bottom:6px;">'+escapeHtml(p.phone)+'</p>' : '') +
+      (p.notes ? '<p class="helper-text">'+escapeHtml(p.notes)+'</p>' : '') +
+      '<div class="stat-grid" style="margin-top:8px;margin-bottom:0;">' +
+        '<div class="stat-tile accent"><div class="label">Recebido</div><div class="value">'+fmtMoney(bal.paid)+'</div></div>' +
+        '<div class="stat-tile '+(bal.balance>0.004?'danger':'')+'"><div class="label">Saldo</div><div class="value">'+fmtMoney(bal.balance)+'</div></div>' +
+      '</div>' +
+      '<button class="btn danger" id="delPatientBtn" style="margin-top:12px;">Excluir paciente</button>' +
+    '</div>';
+
+    html += '<h2 class="section-title">Histórico de atendimentos</h2>';
+    if(treatments.length===0){
+      html += '<div class="empty-state">Nenhum atendimento registrado ainda.</div>';
+    } else {
+      html += treatments.map(function(t){
+        var tbal = t.price - t.paid;
+        var statusClass = tbal<=0.004 ? 'pago' : (t.paid>0?'parcial':'pendente');
+        var statusLabel = tbal<=0.004 ? 'pago' : (t.paid>0?'parcial':'pendente');
+        return '<div class="treat-item" data-id="'+t.id+'">' +
+          '<div class="top"><div><div class="desc">'+escapeHtml(t.description)+'</div><div class="date">'+fmtDate(t.date)+'</div></div>' +
+          '<span class="pill '+statusClass+'">'+statusLabel+'</span></div>' +
+          '<div class="figures">' +
+            '<div>Custo<b>'+fmtMoney(t.totalCost)+'</b></div>' +
+            '<div>Cobrado<b>'+fmtMoney(t.price)+'</b></div>' +
+            '<div>Recebido<b>'+fmtMoney(t.paid)+'</b></div>' +
+          '</div>' +
+          (tbal>0.004 ? (
+            '<div class="inline-pay">' +
+              '<input type="number" class="payInput" min="0" step="0.01" placeholder="Valor recebido">' +
+              '<button class="link-btn registerPay" data-id="'+t.id+'">registrar</button>' +
+            '</div>'
+          ) : '') +
+          '<button class="icon-btn delTreat" data-id="'+t.id+'" style="margin-top:6px;">'+ICONS.trash+' <span style="font-size:.74rem;margin-left:4px;">excluir</span></button>' +
+        '</div>';
+      }).join('');
+    }
+    content.innerHTML = html;
+
+    document.getElementById('backBtn').addEventListener('click', function(){ selectedPatientId=null; renderPatients(); });
+
+    var delBtn = document.getElementById('delPatientBtn');
+    delBtn.addEventListener('click', function(){
+      if(delBtn.getAttribute('data-armed')==='1'){
+        state.patients = state.patients.filter(function(x){return x.id!==p.id;});
+        state.treatments = state.treatments.filter(function(t){return t.patientId!==p.id;});
+        saveState();
+        selectedPatientId = null;
+        showToast('Paciente excluído');
+        renderPatients();
+      } else {
+        delBtn.setAttribute('data-armed','1');
+        delBtn.textContent = 'Confirmar exclusão?';
+        setTimeout(function(){ delBtn.setAttribute('data-armed','0'); delBtn.textContent='Excluir paciente'; }, 4000);
+      }
+    });
+
+    Array.prototype.forEach.call(content.querySelectorAll('.registerPay'), function(btn){
+      btn.addEventListener('click', function(){
+        var row = btn.closest('.inline-pay');
+        var val = Number(row.querySelector('.payInput').value)||0;
+        if(val<=0){ showToast('Informe um valor'); return; }
+        var t = state.treatments.filter(function(x){return x.id===btn.getAttribute('data-id');})[0];
+        t.paid += val;
+        saveState();
+        showToast('Pagamento registrado!');
+        renderPatientDetail(content);
+      });
+    });
+    Array.prototype.forEach.call(content.querySelectorAll('.delTreat'), function(btn){
+      btn.addEventListener('click', function(){
+        if(btn.getAttribute('data-armed')==='1'){
+          state.treatments = state.treatments.filter(function(x){return x.id!==btn.getAttribute('data-id');});
+          saveState();
+          showToast('Atendimento excluído');
+          renderPatientDetail(content);
+        } else {
+          btn.setAttribute('data-armed','1');
+          btn.querySelector('span').textContent='confirmar?';
+          setTimeout(function(){ if(btn.isConnected){btn.setAttribute('data-armed','0'); btn.querySelector('span').textContent='excluir';} }, 4000);
+        }
+      });
+    });
+  }
+
+  // ---------- RESUMO ----------
+  function renderSummary(){
+    var content = document.getElementById('content');
+    var thisMonth = todayISO().slice(0,7);
+
+    function agg(list){
+      var faturado=0, custo=0, recebido=0;
+      list.forEach(function(t){ faturado+=t.price; custo+=t.totalCost; recebido+=t.paid; });
+      return { faturado:faturado, custo:custo, recebido:recebido, lucro:faturado-custo, aReceber: faturado-recebido };
+    }
+    var monthList = state.treatments.filter(function(t){ return t.date.slice(0,7)===thisMonth; });
+    var totalList = state.treatments;
+    var monthAgg = agg(monthList);
+    var totalAgg = agg(totalList);
+
+    function tiles(a){
+      return '<div class="stat-grid">' +
+        '<div class="stat-tile"><div class="label">Faturado</div><div class="value">'+fmtMoney(a.faturado)+'</div></div>' +
+        '<div class="stat-tile danger"><div class="label">Custos</div><div class="value">'+fmtMoney(a.custo)+'</div></div>' +
+        '<div class="stat-tile gold"><div class="label">Lucro estimado</div><div class="value">'+fmtMoney(a.lucro)+'</div></div>' +
+        '<div class="stat-tile accent"><div class="label">A receber</div><div class="value">'+fmtMoney(a.aReceber)+'</div></div>' +
+      '</div>';
+    }
+
+    content.innerHTML =
+      '<h2 class="section-title">Este mês</h2>' + tiles(monthAgg) +
+      '<h2 class="section-title">Total (todo período)</h2>' + tiles(totalAgg) +
+      '<p class="helper-text">Lucro estimado = faturado − custos (materiais + rateio de custo fixo). "A receber" considera atendimentos já cobrados mas ainda não pagos integralmente.</p>';
+  }
+
+  // ---------- AJUSTES ----------
+  function renderSettings(){
+    var content = document.getElementById('content');
+    content.innerHTML =
+      '<div class="card">' +
+        '<h2 class="section-title">Custos fixos mensais</h2>' +
+        '<p class="helper-text">Aluguel, energia, água, equipe, manutenção de equipamento etc. Some tudo aqui — o app rateia por hora trabalhada.</p>' +
+        '<div id="fixedCostsList"></div>' +
+        '<button type="button" class="link-btn" id="addFixedCost">+ adicionar custo fixo</button>' +
+      '</div>' +
+      '<div class="card">' +
+        '<div class="field"><label class="field-label">Horas trabalhadas por mês</label>' +
+          '<input type="number" id="sHours" min="0" step="1" value="'+(state.settings.hoursPerMonth||'')+'"></div>' +
+        '<div class="field"><label class="field-label">Margem de lucro padrão (%)</label>' +
+          '<input type="number" id="sMargin" min="0" max="95" step="1" value="'+state.settings.defaultMargin+'"></div>' +
+        '<div class="totals"><div class="line big"><span>Custo fixo por hora</span><span id="cphDisplay">'+fmtMoney(costPerHour())+'</span></div></div>' +
+      '</div>' +
+      '<div class="card">' +
+        '<h2 class="section-title">Backup dos dados</h2>' +
+        '<p class="helper-text">Os dados ficam salvos apenas neste navegador/celular. Exporte um backup de vez em quando e guarde em algum lugar seguro (e-mail, Drive) — se limpar o navegador ou trocar de aparelho, você vai precisar dele para restaurar.</p>' +
+        '<button class="btn secondary" id="exportBtn" style="margin-bottom:8px;">Exportar backup</button>' +
+        '<input type="file" id="importFile" accept="application/json" style="display:none;">' +
+        '<button class="btn secondary" id="importBtn">Importar backup</button>' +
+      '</div>';
+
+    var list = document.getElementById('fixedCostsList');
+    function addRow(item){
+      var row = document.createElement('div');
+      row.className = 'fixedcost-row';
+      row.innerHTML =
+        '<input type="text" class="fcLabel" placeholder="Ex: aluguel" value="'+escapeHtml(item.label||'')+'">' +
+        '<input type="number" class="fcValue" placeholder="R$" min="0" step="0.01" value="'+(item.value||'')+'">' +
+        '<button type="button" class="icon-btn removeFc">'+ICONS.trash+'</button>';
+      list.appendChild(row);
+      row.querySelector('.removeFc').addEventListener('click', function(){ row.remove(); persistSettings(); });
+      row.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', persistSettings); });
+    }
+    if(state.settings.fixedCosts.length===0){ addRow({label:'',value:''}); }
+    else { state.settings.fixedCosts.forEach(addRow); }
+    document.getElementById('addFixedCost').addEventListener('click', function(){ addRow({label:'',value:''}); });
+
+    function persistSettings(){
+      var items = Array.prototype.map.call(list.querySelectorAll('.fixedcost-row'), function(row){
+        return { label: row.querySelector('.fcLabel').value.trim(), value: Number(row.querySelector('.fcValue').value)||0 };
+      }).filter(function(i){ return i.label || i.value; });
+      state.settings.fixedCosts = items;
+      state.settings.hoursPerMonth = Number(document.getElementById('sHours').value)||0;
+      state.settings.defaultMargin = clamp(Number(document.getElementById('sMargin').value)||0,0,95);
+      saveState();
+      document.getElementById('cphDisplay').textContent = fmtMoney(costPerHour());
+    }
+    document.getElementById('sHours').addEventListener('input', persistSettings);
+    document.getElementById('sMargin').addEventListener('input', persistSettings);
+
+    document.getElementById('exportBtn').addEventListener('click', function(){
+      var data = JSON.stringify(state, null, 2);
+      var filename = 'backup-consultorio-'+todayISO()+'.json';
+      if(window.claude && window.claude.downloads){
+        window.claude.downloads.save({ filename: filename, data: data }).catch(function(){ showToast('Não foi possível salvar o backup'); });
+      } else {
+        showToast('Backup indisponível neste ambiente');
+      }
+    });
+    var importFile = document.getElementById('importFile');
+    document.getElementById('importBtn').addEventListener('click', function(){ importFile.click(); });
+    importFile.addEventListener('change', function(){
+      var file = importFile.files[0];
+      if(!file) return;
+      var reader = new FileReader();
+      reader.onload = function(){
+        try{
+          var parsed = JSON.parse(reader.result);
+          parsed.settings = parsed.settings || { fixedCosts:[], hoursPerMonth:0, defaultMargin:30 };
+          parsed.patients = parsed.patients || [];
+          parsed.treatments = parsed.treatments || [];
+          state = parsed;
+          saveState();
+          showToast('Backup importado!');
+          renderSettings();
+        }catch(e){ showToast('Arquivo inválido'); }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  renderAll();
+})();
+</script>
