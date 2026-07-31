@@ -68,20 +68,12 @@
     flex-shrink:0;padding:16px 18px 12px;border-bottom:1px solid var(--border);
     background:var(--surface);
   }
-  .brand{display:flex;align-items:center;gap:10px;}
-  .brand-mark{
-    width:34px;height:34px;flex-shrink:0;border:1.5px solid var(--ink);border-radius:11px;
-    display:flex;align-items:center;justify-content:center;
-    font-family:var(--font-serif);font-size:.7rem;font-weight:500;letter-spacing:.02em;color:var(--ink);
-  }
-  .brand-copy{display:flex;flex-direction:column;line-height:1.1;min-width:0;}
-  .brand-eyebrow{font-family:var(--font-serif);font-size:.6rem;letter-spacing:.22em;
-    color:var(--ink-muted);font-weight:500;text-transform:uppercase;}
-  .brand-name{font-family:var(--font-serif);font-size:1.05rem;font-weight:500;letter-spacing:.05em;
-    text-transform:uppercase;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .brand-tagline{margin:9px 0 0;padding-top:8px;border-top:1px solid var(--border);text-align:center;
-    font-family:var(--font-serif);font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-muted);}
-  .section-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:11px;}
+  .brand-logo{display:block;margin:0 auto;height:38px;width:auto;}
+  @media (prefers-color-scheme: dark){ .brand-logo{filter:invert(1);} }
+  :root[data-theme="dark"] .brand-logo{filter:invert(1);}
+  :root[data-theme="light"] .brand-logo{filter:none;}
+  .section-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:12px;
+    padding-top:10px;border-top:1px solid var(--border);}
   .section-row #pageTitle{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--ink);}
   .section-row #pageSubtitle{font-size:.72rem;color:var(--ink-muted);text-align:right;}
   main.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 28px;}
@@ -187,14 +179,7 @@
 
 <div class="app-shell">
   <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark">LN</div>
-      <div class="brand-copy">
-        <span class="brand-eyebrow">Dra.</span>
-        <span class="brand-name">Laura Nunes</span>
-      </div>
-    </div>
-    <p class="brand-tagline">Odontologia Clínica e Estética</p>
+    <img class="brand-logo" src="logo.png" alt="Dra. Laura Nunes — Odontologia Clínica e Estética">
     <div class="section-row">
       <span id="pageTitle">Calculadora</span>
       <span id="pageSubtitle">Custo e preço do atendimento</span>
