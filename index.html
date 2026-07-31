@@ -168,8 +168,6 @@
   .back-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;color:var(--accent-strong);font-weight:600;font-size:.88rem;}
   .back-row svg{width:18px;height:18px;}
 
-  .fixedcost-row{display:grid;grid-template-columns:1fr 100px 28px;gap:8px;align-items:center;margin-bottom:7px;}
-  .fixedcost-row input{padding:8px 9px;}
   .empty-state{text-align:center;color:var(--ink-muted);font-size:.85rem;padding:24px 10px;}
   .toast{
     position:absolute;left:50%;bottom:88px;transform:translateX(-50%);background:var(--ink);color:var(--bg);
@@ -217,6 +215,7 @@
     chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"/><line x1="12" y1="21" x2="12" y2="6"/><line x1="19" y1="21" x2="19" y2="14"/><line x1="3" y1="21" x2="21" y2="21"/></svg>',
     gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.04.04a2 2 0 1 1-2.83 2.83l-.04-.04a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.06a1.65 1.65 0 0 0-1.09-1.51 1.65 1.65 0 0 0-1.82.33l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4a2 2 0 1 1 0-4h.06a1.65 1.65 0 0 0 1.51-1.09 1.65 1.65 0 0 0-.33-1.82l-.04-.04a2 2 0 1 1 2.83-2.83l.04.04a1.65 1.65 0 0 0 1.82.33H10a1.65 1.65 0 0 0 1-1.51V4a2 2 0 1 1 4 0v.06a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04a1.65 1.65 0 0 0-.33 1.82V10a1.65 1.65 0 0 0 1.51 1H20a2 2 0 1 1 0 4h-.06a1.65 1.65 0 0 0-1.51 1z"/></svg>',
     back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
+    box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.5 12 3 3.5 7.5 12 12l8.5-4.5Z"/><path d="M3.5 7.5v9L12 21l8.5-4.5v-9"/><path d="M12 12v9"/></svg>',
     trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
     plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
   };
@@ -229,34 +228,29 @@
   function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function clamp(n,min,max){ return Math.min(max,Math.max(min,n)); }
 
+  var PROCEDURE_GROUPS = [
+    { label:'Odontologia', options:['Avaliação / Consulta','Limpeza (Profilaxia)','Restauração','Extração','Tratamento de canal','Clareamento dental','Prótese','Facetas','Aplicação de flúor'] },
+    { label:'Harmonização Facial', options:['Botox (Toxina botulínica)','Preenchimento (Ácido hialurônico)','Bichectomia','Fios de sustentação','Skinbooster'] }
+  ];
+
   function loadState(){
     try{
       var raw = localStorage.getItem(STORAGE_KEY);
       if(raw){
         var parsed = JSON.parse(raw);
         parsed.settings = parsed.settings || {};
-        parsed.settings.fixedCosts = parsed.settings.fixedCosts || [];
-        parsed.settings.hoursPerMonth = parsed.settings.hoursPerMonth || 0;
+        parsed.settings.defaultRoomCost = parsed.settings.defaultRoomCost || 0;
         parsed.settings.defaultMargin = (parsed.settings.defaultMargin==null) ? 30 : parsed.settings.defaultMargin;
         parsed.patients = parsed.patients || [];
         parsed.treatments = parsed.treatments || [];
+        parsed.purchases = parsed.purchases || [];
         return parsed;
       }
     }catch(e){}
-    return { settings:{ fixedCosts:[], hoursPerMonth:0, defaultMargin:30 }, patients:[], treatments:[] };
+    return { settings:{ defaultRoomCost:0, defaultMargin:30 }, patients:[], treatments:[], purchases:[] };
   }
   var state = loadState();
   function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-
-  function costPerHour(){
-    var sum = state.settings.fixedCosts.reduce(function(a,c){ return a + (Number(c.value)||0); }, 0);
-    var hrs = Number(state.settings.hoursPerMonth)||0;
-    if(hrs<=0) return 0;
-    return sum/hrs;
-  }
-  function settingsConfigured(){
-    return state.settings.fixedCosts.length>0 && Number(state.settings.hoursPerMonth)>0;
-  }
 
   function findPatientByName(name){
     var n = name.trim().toLowerCase();
@@ -279,8 +273,9 @@
   var TABS = [
     {id:'calc', label:'Calcular', icon:'calc', title:'Calculadora', subtitle:'Custo e preço do atendimento'},
     {id:'patients', label:'Pacientes', icon:'users', title:'Pacientes', subtitle:'Histórico e pagamentos'},
+    {id:'stock', label:'Estoque', icon:'box', title:'Estoque e compras', subtitle:'Materiais de uso geral'},
     {id:'summary', label:'Resumo', icon:'chart', title:'Resumo financeiro', subtitle:'Faturamento, custos e lucro'},
-    {id:'settings', label:'Ajustes', icon:'gear', title:'Ajustes', subtitle:'Custos fixos e margem padrão'}
+    {id:'settings', label:'Ajustes', icon:'gear', title:'Ajustes', subtitle:'Custo da sala e margem padrão'}
   ];
 
   function renderTabbar(){
@@ -316,6 +311,7 @@
     setHeader(meta.title, meta.subtitle);
     if(activeTab==='calc') renderCalc();
     else if(activeTab==='patients') renderPatients();
+    else if(activeTab==='stock') renderStock();
     else if(activeTab==='summary') renderSummary();
     else if(activeTab==='settings') renderSettings();
   }
@@ -324,41 +320,45 @@
   function renderCalc(){
     calcTouchedPrice = false;
     var content = document.getElementById('content');
-    var cph = costPerHour();
-    var configuredNotice = settingsConfigured() ? '' :
-      '<div class="notice">Você ainda não configurou seus custos fixos (aluguel, energia, equipe...). '+
-      'Sem isso, o rateio por hora não entra na conta. <button id="goSettings">Configurar agora</button></div>';
+    var procedureOptions = PROCEDURE_GROUPS.map(function(g){
+      return '<optgroup label="'+escapeHtml(g.label)+'">'+g.options.map(function(o){
+        return '<option value="'+escapeHtml(o)+'">'+escapeHtml(o)+'</option>';
+      }).join('')+'</optgroup>';
+    }).join('') + '<option value="__outro__">Outro (digitar)</option>';
 
     content.innerHTML =
-      configuredNotice +
       '<div class="card">' +
         '<div class="field"><label class="field-label">Paciente</label>' +
           '<input type="text" id="fPatient" list="patientDatalist" placeholder="Nome do paciente" autocomplete="off">' +
           '<datalist id="patientDatalist">'+state.patients.map(function(p){return '<option value="'+escapeHtml(p.name)+'">';}).join('')+'</datalist>' +
         '</div>' +
         '<div class="field"><label class="field-label">Procedimento</label>' +
-          '<input type="text" id="fDesc" placeholder="Ex: Restauração, Limpeza, Extração...">' +
+          '<select id="fDescSelect">'+procedureOptions+'</select>' +
         '</div>' +
-        '<div class="row-2">' +
-          '<div class="field"><label class="field-label">Data</label><input type="date" id="fDate" value="'+todayISO()+'"></div>' +
-          '<div class="field"><label class="field-label">Tempo gasto (horas)</label><input type="number" id="fHours" min="0" step="0.25" value="1"></div>' +
+        '<div class="field" id="fDescCustomWrap" style="display:none;">' +
+          '<label class="field-label">Qual procedimento?</label>' +
+          '<input type="text" id="fDescCustom" placeholder="Digite o procedimento">' +
         '</div>' +
+        '<div class="field"><label class="field-label">Data</label><input type="date" id="fDate" value="'+todayISO()+'"></div>' +
       '</div>' +
 
       '<div class="card">' +
-        '<label class="field-label" style="margin-bottom:8px;">Materiais e insumos usados</label>' +
+        '<label class="field-label" style="margin-bottom:8px;">Materiais de custo alto usados</label>' +
         '<div id="materialsList"></div>' +
         '<button type="button" class="link-btn" id="addMaterial">+ adicionar material</button>' +
+        '<p class="helper-text" style="margin-top:8px;">Use para itens caros específicos deste atendimento, como toxina botulínica ou ácido hialurônico. Materiais de baixo custo (luvas, algodão, gel clareador) lance direto na aba Estoque.</p>' +
       '</div>' +
 
       '<div class="card">' +
+        '<div class="field"><label class="field-label">Custo da sala neste atendimento</label>' +
+          '<input type="number" id="fRoom" min="0" step="0.01" value="'+(Number(state.settings.defaultRoomCost)||0)+'"></div>' +
         '<div class="field" style="margin-bottom:8px;"><label class="field-label">Margem de lucro desejada (%)</label>' +
           '<input type="number" id="fMargin" min="0" max="95" step="1" value="'+(state.settings.defaultMargin||30)+'">' +
         '</div>' +
-        '<p class="helper-text">Esse é o percentual do preço final que sobra de lucro, depois de cobrir materiais e o custo fixo rateado (custo/hora atual: <b>'+fmtMoney(cph)+'</b>).</p>' +
+        '<p class="helper-text">Esse é o percentual do preço final que sobra de lucro, depois de cobrir materiais e a sala.</p>' +
         '<div class="totals">' +
           '<div class="line"><span>Custo com materiais</span><span id="sumMaterials">'+fmtMoney(0)+'</span></div>' +
-          '<div class="line"><span>Custo fixo rateado</span><span id="sumFixed">'+fmtMoney(0)+'</span></div>' +
+          '<div class="line"><span>Custo da sala</span><span id="sumRoom">'+fmtMoney(0)+'</span></div>' +
           '<div class="line"><span>Custo total</span><span id="sumCusto">'+fmtMoney(0)+'</span></div>' +
           '<div class="line profit"><span>Lucro estimado</span><span id="sumLucro">'+fmtMoney(0)+'</span></div>' +
           '<div class="line big"><span>Preço sugerido</span><span id="sumPreco">'+fmtMoney(0)+'</span></div>' +
@@ -373,8 +373,11 @@
         '<button class="btn" id="saveTreatment">Salvar atendimento</button>' +
       '</div>';
 
-    document.getElementById('goSettings') && document.getElementById('goSettings').addEventListener('click', function(){
-      activeTab='settings'; renderAll();
+    var descSelect = document.getElementById('fDescSelect');
+    var descCustomWrap = document.getElementById('fDescCustomWrap');
+    var descCustom = document.getElementById('fDescCustom');
+    descSelect.addEventListener('change', function(){
+      descCustomWrap.style.display = descSelect.value==='__outro__' ? 'block' : 'none';
     });
 
     var materialsList = document.getElementById('materialsList');
@@ -382,7 +385,7 @@
       var row = document.createElement('div');
       row.className = 'material-row';
       row.innerHTML =
-        '<input type="text" class="mName" placeholder="Ex: resina, anestesia..." value="'+escapeHtml(name||'')+'">' +
+        '<input type="text" class="mName" placeholder="Ex: Toxina botulínica..." value="'+escapeHtml(name||'')+'">' +
         '<input type="number" class="mCost" placeholder="R$" min="0" step="0.01" value="'+(cost||'')+'">' +
         '<button type="button" class="icon-btn removeMaterial">'+ICONS.trash+'</button>';
       materialsList.appendChild(row);
@@ -403,30 +406,29 @@
 
     function updateTotals(){
       var materialsSum = getMaterials().reduce(function(a,m){return a+m.cost;},0);
-      var hours = Number(document.getElementById('fHours').value)||0;
+      var roomCost = Number(document.getElementById('fRoom').value)||0;
       var margin = clamp(Number(document.getElementById('fMargin').value)||0, 0, 95);
-      var fixedShare = costPerHour()*hours;
-      var custoTotal = materialsSum + fixedShare;
+      var custoTotal = materialsSum + roomCost;
       var price = margin>=95 ? custoTotal/0.05 : custoTotal/(1-margin/100);
       var lucro = price - custoTotal;
       document.getElementById('sumMaterials').textContent = fmtMoney(materialsSum);
-      document.getElementById('sumFixed').textContent = fmtMoney(fixedShare);
+      document.getElementById('sumRoom').textContent = fmtMoney(roomCost);
       document.getElementById('sumCusto').textContent = fmtMoney(custoTotal);
       document.getElementById('sumLucro').textContent = fmtMoney(lucro);
       document.getElementById('sumPreco').textContent = fmtMoney(price);
       if(!calcTouchedPrice){ priceInput.value = price.toFixed(2); }
-      return { materialsSum:materialsSum, fixedShare:fixedShare, custoTotal:custoTotal, margin:margin, price:price };
+      return { materialsSum:materialsSum, roomCost:roomCost, custoTotal:custoTotal, margin:margin, price:price };
     }
-    document.getElementById('fHours').addEventListener('input', updateTotals);
+    document.getElementById('fRoom').addEventListener('input', updateTotals);
     document.getElementById('fMargin').addEventListener('input', updateTotals);
     updateTotals();
 
     document.getElementById('saveTreatment').addEventListener('click', function(){
       var name = document.getElementById('fPatient').value.trim();
       if(!name){ showToast('Informe o nome do paciente'); return; }
-      var desc = document.getElementById('fDesc').value.trim() || 'Atendimento';
+      var desc = descSelect.value==='__outro__' ? descCustom.value.trim() : descSelect.value;
+      if(!desc){ showToast('Informe o procedimento'); return; }
       var date = document.getElementById('fDate').value || todayISO();
-      var hours = Number(document.getElementById('fHours').value)||0;
       var materials = getMaterials();
       var totals = updateTotals();
       var price = Number(priceInput.value)||0;
@@ -439,13 +441,78 @@
       }
       state.treatments.push({
         id: uid(), patientId: patient.id, date: date, description: desc,
-        materials: materials, timeHours: hours, fixedCostPerHour: costPerHour(),
-        materialsCost: totals.materialsSum, fixedCost: totals.fixedShare, totalCost: totals.custoTotal,
+        materials: materials, materialsCost: totals.materialsSum, roomCost: totals.roomCost, totalCost: totals.custoTotal,
         margin: totals.margin, price: price, paid: paidNow
       });
       saveState();
       showToast('Atendimento salvo!');
       renderCalc();
+    });
+  }
+
+  // ---------- ESTOQUE ----------
+  function renderStock(){
+    var content = document.getElementById('content');
+    var thisMonth = todayISO().slice(0,7);
+    var monthTotal = state.purchases.filter(function(p){return p.date.slice(0,7)===thisMonth;})
+      .reduce(function(a,p){return a+p.value;},0);
+
+    content.innerHTML =
+      '<div class="card">' +
+        '<h2 class="section-title">Registrar compra</h2>' +
+        '<div class="field"><label class="field-label">O que foi comprado</label>' +
+          '<input type="text" id="pDesc" placeholder="Ex: Caixa de luvas, algodão, gel clareador..."></div>' +
+        '<div class="row-2">' +
+          '<div class="field"><label class="field-label">Data</label><input type="date" id="pDate" value="'+todayISO()+'"></div>' +
+          '<div class="field"><label class="field-label">Valor</label><input type="number" id="pValue" min="0" step="0.01" placeholder="R$"></div>' +
+        '</div>' +
+        '<button class="btn" id="addPurchase">Adicionar compra</button>' +
+      '</div>' +
+      '<div class="stat-tile" style="margin-bottom:16px;"><div class="label">Gasto em estoque este mês</div><div class="value">'+fmtMoney(monthTotal)+'</div></div>' +
+      '<h2 class="section-title">Compras registradas</h2>' +
+      '<div id="purchaseList"></div>';
+
+    var listEl = document.getElementById('purchaseList');
+    function renderList(){
+      var sorted = state.purchases.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+      if(sorted.length===0){
+        listEl.innerHTML = '<div class="empty-state">Nenhuma compra registrada ainda.</div>';
+        return;
+      }
+      listEl.innerHTML = sorted.map(function(p){
+        return '<div class="treat-item" data-id="'+p.id+'">' +
+          '<div class="top"><div><div class="desc">'+escapeHtml(p.description)+'</div><div class="date">'+fmtDate(p.date)+'</div></div>' +
+          '<span style="font-weight:700;font-variant-numeric:tabular-nums;">'+fmtMoney(p.value)+'</span></div>' +
+          '<button class="icon-btn delPurchase" data-id="'+p.id+'">'+ICONS.trash+' <span style="font-size:.74rem;margin-left:4px;">excluir</span></button>' +
+        '</div>';
+      }).join('');
+      Array.prototype.forEach.call(listEl.querySelectorAll('.delPurchase'), function(btn){
+        btn.addEventListener('click', function(){
+          if(btn.getAttribute('data-armed')==='1'){
+            state.purchases = state.purchases.filter(function(x){return x.id!==btn.getAttribute('data-id');});
+            saveState();
+            showToast('Compra excluída');
+            renderStock();
+          } else {
+            btn.setAttribute('data-armed','1');
+            btn.querySelector('span').textContent='confirmar?';
+            setTimeout(function(){ if(btn.isConnected){btn.setAttribute('data-armed','0'); btn.querySelector('span').textContent='excluir';} }, 4000);
+          }
+        });
+      });
+    }
+    renderList();
+
+    document.getElementById('addPurchase').addEventListener('click', function(){
+      var desc = document.getElementById('pDesc').value.trim();
+      var date = document.getElementById('pDate').value || todayISO();
+      var value = Number(document.getElementById('pValue').value)||0;
+      if(!desc){ showToast('Informe o que foi comprado'); return; }
+      if(value<=0){ showToast('Informe o valor'); return; }
+      state.purchases.push({ id: uid(), description: desc, date: date, value: value });
+      saveState();
+      showToast('Compra registrada!');
+      renderStock();
     });
   }
 
@@ -597,22 +664,38 @@
   }
 
   // ---------- RESUMO ----------
+  var summaryMonth = todayISO().slice(0,7);
+
+  function monthLabel(ym){
+    var d = new Date(Number(ym.slice(0,4)), Number(ym.slice(5,7))-1, 1);
+    var s = d.toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+    return s.charAt(0).toUpperCase()+s.slice(1);
+  }
+
   function renderSummary(){
     var content = document.getElementById('content');
-    var thisMonth = todayISO().slice(0,7);
 
-    function agg(list){
-      var faturado=0, custo=0, recebido=0;
-      list.forEach(function(t){ faturado+=t.price; custo+=t.totalCost; recebido+=t.paid; });
-      return { faturado:faturado, custo:custo, recebido:recebido, lucro:faturado-custo, aReceber: faturado-recebido };
+    var months = {};
+    state.treatments.forEach(function(t){ months[t.date.slice(0,7)] = true; });
+    state.purchases.forEach(function(p){ months[p.date.slice(0,7)] = true; });
+    months[summaryMonth] = true;
+    var monthKeys = Object.keys(months).sort().reverse();
+
+    function agg(treats, purchs){
+      var faturado=0, custoAtend=0, recebido=0;
+      treats.forEach(function(t){ faturado+=t.price; custoAtend+=t.totalCost; recebido+=t.paid; });
+      var custoEstoque = purchs.reduce(function(a,p){return a+p.value;},0);
+      var custo = custoAtend+custoEstoque;
+      return { faturado:faturado, custo:custo, recebido:recebido, lucro:faturado-custo, aReceber: faturado-recebido, qtd: treats.length };
     }
-    var monthList = state.treatments.filter(function(t){ return t.date.slice(0,7)===thisMonth; });
-    var totalList = state.treatments;
-    var monthAgg = agg(monthList);
-    var totalAgg = agg(totalList);
+    var monthTreats = state.treatments.filter(function(t){ return t.date.slice(0,7)===summaryMonth; });
+    var monthPurchs = state.purchases.filter(function(p){ return p.date.slice(0,7)===summaryMonth; });
+    var monthAgg = agg(monthTreats, monthPurchs);
+    var totalAgg = agg(state.treatments, state.purchases);
 
     function tiles(a){
       return '<div class="stat-grid">' +
+        '<div class="stat-tile"><div class="label">Atendimentos</div><div class="value">'+a.qtd+'</div></div>' +
         '<div class="stat-tile"><div class="label">Faturado</div><div class="value">'+fmtMoney(a.faturado)+'</div></div>' +
         '<div class="stat-tile danger"><div class="label">Custos</div><div class="value">'+fmtMoney(a.custo)+'</div></div>' +
         '<div class="stat-tile gold"><div class="label">Lucro estimado</div><div class="value">'+fmtMoney(a.lucro)+'</div></div>' +
@@ -621,9 +704,19 @@
     }
 
     content.innerHTML =
-      '<h2 class="section-title">Este mês</h2>' + tiles(monthAgg) +
+      '<div class="field"><label class="field-label">Ver mês</label>' +
+        '<select id="summaryMonthSelect">'+monthKeys.map(function(k){
+          return '<option value="'+k+'"'+(k===summaryMonth?' selected':'')+'>'+monthLabel(k)+'</option>';
+        }).join('')+'</select>' +
+      '</div>' +
+      tiles(monthAgg) +
       '<h2 class="section-title">Total (todo período)</h2>' + tiles(totalAgg) +
-      '<p class="helper-text">Lucro estimado = faturado − custos (materiais + rateio de custo fixo). "A receber" considera atendimentos já cobrados mas ainda não pagos integralmente.</p>';
+      '<p class="helper-text">Lucro estimado = faturado − custos (materiais + sala dos atendimentos + compras de estoque). "A receber" considera atendimentos já cobrados mas ainda não pagos integralmente.</p>';
+
+    document.getElementById('summaryMonthSelect').addEventListener('change', function(e){
+      summaryMonth = e.target.value;
+      renderSummary();
+    });
   }
 
   // ---------- AJUSTES ----------
@@ -631,53 +724,26 @@
     var content = document.getElementById('content');
     content.innerHTML =
       '<div class="card">' +
-        '<h2 class="section-title">Custos fixos mensais</h2>' +
-        '<p class="helper-text">Aluguel, energia, água, equipe, manutenção de equipamento etc. Some tudo aqui — o app rateia por hora trabalhada.</p>' +
-        '<div id="fixedCostsList"></div>' +
-        '<button type="button" class="link-btn" id="addFixedCost">+ adicionar custo fixo</button>' +
-      '</div>' +
-      '<div class="card">' +
-        '<div class="field"><label class="field-label">Horas trabalhadas por mês</label>' +
-          '<input type="number" id="sHours" min="0" step="1" value="'+(state.settings.hoursPerMonth||'')+'"></div>' +
-        '<div class="field"><label class="field-label">Margem de lucro padrão (%)</label>' +
+        '<div class="field"><label class="field-label">Custo padrão da sala por atendimento</label>' +
+          '<input type="number" id="sRoom" min="0" step="0.01" value="'+(state.settings.defaultRoomCost||'')+'"></div>' +
+        '<p class="helper-text">Esse valor entra pré-preenchido em cada novo atendimento (dá pra ajustar na hora, se precisar).</p>' +
+        '<div class="field" style="margin-bottom:0;"><label class="field-label">Margem de lucro padrão (%)</label>' +
           '<input type="number" id="sMargin" min="0" max="95" step="1" value="'+state.settings.defaultMargin+'"></div>' +
-        '<div class="totals"><div class="line big"><span>Custo fixo por hora</span><span id="cphDisplay">'+fmtMoney(costPerHour())+'</span></div></div>' +
       '</div>' +
       '<div class="card">' +
         '<h2 class="section-title">Backup dos dados</h2>' +
-        '<p class="helper-text">Os dados ficam salvos apenas neste navegador/celular. Exporte um backup de vez em quando e guarde em algum lugar seguro (e-mail, Drive) — se limpar o navegador ou trocar de aparelho, você vai precisar dele para restaurar.</p>' +
+        '<p class="helper-text">Os dados ficam salvos apenas neste navegador/celular — não há nuvem envolvida. Exporte um backup de vez em quando e guarde em algum lugar seguro (e-mail, Drive) — se limpar o navegador ou trocar de aparelho, você vai precisar dele para restaurar.</p>' +
         '<button class="btn secondary" id="exportBtn" style="margin-bottom:8px;">Exportar backup</button>' +
         '<input type="file" id="importFile" accept="application/json" style="display:none;">' +
         '<button class="btn secondary" id="importBtn">Importar backup</button>' +
       '</div>';
 
-    var list = document.getElementById('fixedCostsList');
-    function addRow(item){
-      var row = document.createElement('div');
-      row.className = 'fixedcost-row';
-      row.innerHTML =
-        '<input type="text" class="fcLabel" placeholder="Ex: aluguel" value="'+escapeHtml(item.label||'')+'">' +
-        '<input type="number" class="fcValue" placeholder="R$" min="0" step="0.01" value="'+(item.value||'')+'">' +
-        '<button type="button" class="icon-btn removeFc">'+ICONS.trash+'</button>';
-      list.appendChild(row);
-      row.querySelector('.removeFc').addEventListener('click', function(){ row.remove(); persistSettings(); });
-      row.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', persistSettings); });
-    }
-    if(state.settings.fixedCosts.length===0){ addRow({label:'',value:''}); }
-    else { state.settings.fixedCosts.forEach(addRow); }
-    document.getElementById('addFixedCost').addEventListener('click', function(){ addRow({label:'',value:''}); });
-
     function persistSettings(){
-      var items = Array.prototype.map.call(list.querySelectorAll('.fixedcost-row'), function(row){
-        return { label: row.querySelector('.fcLabel').value.trim(), value: Number(row.querySelector('.fcValue').value)||0 };
-      }).filter(function(i){ return i.label || i.value; });
-      state.settings.fixedCosts = items;
-      state.settings.hoursPerMonth = Number(document.getElementById('sHours').value)||0;
+      state.settings.defaultRoomCost = Number(document.getElementById('sRoom').value)||0;
       state.settings.defaultMargin = clamp(Number(document.getElementById('sMargin').value)||0,0,95);
       saveState();
-      document.getElementById('cphDisplay').textContent = fmtMoney(costPerHour());
     }
-    document.getElementById('sHours').addEventListener('input', persistSettings);
+    document.getElementById('sRoom').addEventListener('input', persistSettings);
     document.getElementById('sMargin').addEventListener('input', persistSettings);
 
     document.getElementById('exportBtn').addEventListener('click', function(){
@@ -698,9 +764,10 @@
       reader.onload = function(){
         try{
           var parsed = JSON.parse(reader.result);
-          parsed.settings = parsed.settings || { fixedCosts:[], hoursPerMonth:0, defaultMargin:30 };
+          parsed.settings = parsed.settings || { defaultRoomCost:0, defaultMargin:30 };
           parsed.patients = parsed.patients || [];
           parsed.treatments = parsed.treatments || [];
+          parsed.purchases = parsed.purchases || [];
           state = parsed;
           saveState();
           showToast('Backup importado!');
