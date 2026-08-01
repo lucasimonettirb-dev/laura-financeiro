@@ -168,6 +168,18 @@
   .back-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;color:var(--accent-strong);font-weight:600;font-size:.88rem;}
   .back-row svg{width:18px;height:18px;}
 
+  .agenda-day-group{margin-bottom:18px;}
+  .agenda-day-header{font-family:var(--font-serif);font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;
+    font-weight:500;color:var(--ink-muted);margin:0 0 9px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .agenda-day-header.today{color:var(--accent-strong);font-weight:600;}
+  .appt-card{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:12px 13px;margin-bottom:9px;}
+  .appt-time{flex-shrink:0;width:50px;font-weight:700;font-size:.95rem;color:var(--accent-strong);
+    font-variant-numeric:tabular-nums;padding-top:1px;}
+  .appt-body{flex:1;min-width:0;}
+  .appt-body .desc{font-weight:700;font-size:.9rem;}
+  .appt-body .proc{font-size:.78rem;color:var(--ink-muted);margin-top:1px;}
+
   .empty-state{text-align:center;color:var(--ink-muted);font-size:.85rem;padding:24px 10px;}
   .toast{
     position:absolute;left:50%;bottom:88px;transform:translateX(-50%);background:var(--ink);color:var(--bg);
@@ -232,7 +244,6 @@ var db = getFirestore(fbApp);
 try{ enableIndexedDbPersistence(db); }catch(e){}
 
 var ICONS = {
-  calc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="8" y2="12.01"/><line x1="12" y1="12" x2="12" y2="12.01"/><line x1="16" y1="12" x2="16" y2="12.01"/><line x1="8" y1="16" x2="8" y2="16.01"/><line x1="12" y1="16" x2="12" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/></svg>',
   users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20v-1a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v1"/><circle cx="10" cy="7" r="3.2"/><path d="M22 20v-1a3.8 3.8 0 0 0-2.7-3.65"/><path d="M15.2 4.2A3.8 3.8 0 0 1 17 11"/></svg>',
   chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="11"/><line x1="12" y1="21" x2="12" y2="6"/><line x1="19" y1="21" x2="19" y2="14"/><line x1="3" y1="21" x2="21" y2="21"/></svg>',
   gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.04.04a2 2 0 1 1-2.83 2.83l-.04-.04a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.06a1.65 1.65 0 0 0-1.09-1.51 1.65 1.65 0 0 0-1.82.33l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4a2 2 0 1 1 0-4h.06a1.65 1.65 0 0 0 1.51-1.09 1.65 1.65 0 0 0-.33-1.82l-.04-.04a2 2 0 1 1 2.83-2.83l.04.04a1.65 1.65 0 0 0 1.82.33H10a1.65 1.65 0 0 0 1-1.51V4a2 2 0 1 1 4 0v.06a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04a1.65 1.65 0 0 0-.33 1.82V10a1.65 1.65 0 0 0 1.51 1H20a2 2 0 1 1 0 4h-.06a1.65 1.65 0 0 0-1.51 1z"/></svg>',
@@ -276,13 +287,11 @@ function nextAppointment(pid){
     .sort(function(a,b){ return (a.date+a.time).localeCompare(b.date+b.time); })[0];
 }
 
-var activeTab = 'calc';
+var activeTab = 'agenda';
 var selectedPatientId = null;
-var calcTouchedPrice = false;
 
 var TABS = [
-  {id:'calc', label:'Calcular', icon:'calc', title:'Calculadora', subtitle:'Custo e preço do atendimento'},
-  {id:'agenda', label:'Agenda', icon:'calendar', title:'Agenda', subtitle:'Consultas marcadas'},
+  {id:'agenda', label:'Agenda', icon:'calendar', title:'Agenda', subtitle:'Marque e conclua consultas'},
   {id:'patients', label:'Pacientes', icon:'users', title:'Pacientes', subtitle:'Histórico e pagamentos'},
   {id:'stock', label:'Estoque', icon:'box', title:'Estoque e compras', subtitle:'Materiais de uso geral'},
   {id:'summary', label:'Resumo', icon:'chart', title:'Resumo financeiro', subtitle:'Faturamento, custos e lucro'},
@@ -320,165 +329,44 @@ function renderAll(){
   renderTabbar();
   var meta = TABS.filter(function(t){return t.id===activeTab;})[0];
   setHeader(meta.title, meta.subtitle);
-  if(activeTab==='calc') renderCalc();
-  else if(activeTab==='agenda') renderAgenda();
+  if(activeTab==='agenda') renderAgenda();
   else if(activeTab==='patients') renderPatients();
   else if(activeTab==='stock') renderStock();
   else if(activeTab==='summary') renderSummary();
   else if(activeTab==='settings') renderSettings();
 }
 
-// ---------- CALCULADORA ----------
-function renderCalc(){
-  calcTouchedPrice = false;
-  var content = document.getElementById('content');
-  var procedureOptions = PROCEDURE_GROUPS.map(function(g){
-    return '<optgroup label="'+escapeHtml(g.label)+'">'+g.options.map(function(o){
-      return '<option value="'+escapeHtml(o)+'">'+escapeHtml(o)+'</option>';
-    }).join('')+'</optgroup>';
-  }).join('') + '<option value="__outro__">Outro (digitar)</option>';
-
-  content.innerHTML =
-    '<div class="card">' +
-      '<div class="field"><label class="field-label">Paciente</label>' +
-        '<input type="text" id="fPatient" list="patientDatalist" placeholder="Nome do paciente" autocomplete="off">' +
-        '<datalist id="patientDatalist">'+state.patients.map(function(p){return '<option value="'+escapeHtml(p.name)+'">';}).join('')+'</datalist>' +
-      '</div>' +
-      '<div class="field"><label class="field-label">Procedimento</label>' +
-        '<select id="fDescSelect">'+procedureOptions+'</select>' +
-      '</div>' +
-      '<div class="field" id="fDescCustomWrap" style="display:none;">' +
-        '<label class="field-label">Qual procedimento?</label>' +
-        '<input type="text" id="fDescCustom" placeholder="Digite o procedimento">' +
-      '</div>' +
-      '<div class="field"><label class="field-label">Data</label><input type="date" id="fDate" value="'+todayISO()+'"></div>' +
-    '</div>' +
-
-    '<div class="card">' +
-      '<label class="field-label" style="margin-bottom:8px;">Materiais de custo alto usados</label>' +
-      '<div id="materialsList"></div>' +
-      '<button type="button" class="link-btn" id="addMaterial">+ adicionar material</button>' +
-      '<p class="helper-text" style="margin-top:8px;">Use para itens caros específicos deste atendimento, como toxina botulínica ou ácido hialurônico. Materiais de baixo custo (luvas, algodão, gel clareador) lance direto na aba Estoque.</p>' +
-    '</div>' +
-
-    '<div class="card">' +
-      '<div class="field"><label class="field-label">Custo da sala neste atendimento</label>' +
-        '<input type="number" id="fRoom" min="0" step="0.01" value="'+(Number(state.settings.defaultRoomCost)||0)+'"></div>' +
-      '<div class="totals" style="border-top:none;margin-top:0;padding-top:0;">' +
-        '<div class="line"><span>Custo com materiais</span><span id="sumMaterials">'+fmtMoney(0)+'</span></div>' +
-        '<div class="line"><span>Custo da sala</span><span id="sumRoom">'+fmtMoney(0)+'</span></div>' +
-        '<div class="line big"><span>Custo total</span><span id="sumCusto">'+fmtMoney(0)+'</span></div>' +
-      '</div>' +
-      '<div class="field" style="margin-top:12px;margin-bottom:0;"><label class="field-label">Valor a cobrar</label>' +
-        '<input type="number" id="fPrice" min="0" step="0.01" value="0"></div>' +
-      '<p class="helper-text">Preencha quanto vai cobrar — o lucro e a margem abaixo são calculados automaticamente a partir desse valor.</p>' +
-      '<div class="totals">' +
-        '<div class="line profit"><span>Lucro estimado</span><span id="sumLucro">'+fmtMoney(0)+'</span></div>' +
-        '<div class="line big"><span>Margem</span><span id="sumMargem">0%</span></div>' +
-      '</div>' +
-    '</div>' +
-
-    '<div class="card">' +
-      '<div class="field"><label class="field-label">Já recebido agora</label><input type="number" id="fPaidNow" min="0" step="0.01" value="0"></div>' +
-      '<button class="btn" id="saveTreatment">Salvar atendimento</button>' +
-    '</div>';
-
-  var descSelect = document.getElementById('fDescSelect');
-  var descCustomWrap = document.getElementById('fDescCustomWrap');
-  var descCustom = document.getElementById('fDescCustom');
-  descSelect.addEventListener('change', function(){
-    descCustomWrap.style.display = descSelect.value==='__outro__' ? 'block' : 'none';
-  });
-
-  var materialsList = document.getElementById('materialsList');
-  function addMaterialRow(name, cost){
-    var row = document.createElement('div');
-    row.className = 'material-row';
-    row.innerHTML =
-      '<input type="text" class="mName" placeholder="Ex: Toxina botulínica..." value="'+escapeHtml(name||'')+'">' +
-      '<input type="number" class="mCost" placeholder="R$" min="0" step="0.01" value="'+(cost||'')+'">' +
-      '<button type="button" class="icon-btn removeMaterial">'+ICONS.trash+'</button>';
-    materialsList.appendChild(row);
-    row.querySelector('.removeMaterial').addEventListener('click', function(){ row.remove(); updateTotals(); });
-    row.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', updateTotals); });
-  }
-  addMaterialRow('', '');
-  document.getElementById('addMaterial').addEventListener('click', function(){ addMaterialRow('',''); });
-
-  function getMaterials(){
-    return Array.prototype.map.call(materialsList.querySelectorAll('.material-row'), function(row){
-      return { label: row.querySelector('.mName').value.trim(), cost: Number(row.querySelector('.mCost').value)||0 };
-    }).filter(function(m){ return m.label || m.cost; });
-  }
-
-  var priceInput = document.getElementById('fPrice');
-  priceInput.addEventListener('input', function(){ calcTouchedPrice = true; updateTotals(); });
-
-  function updateTotals(){
-    var materialsSum = getMaterials().reduce(function(a,m){return a+m.cost;},0);
-    var roomCost = Number(document.getElementById('fRoom').value)||0;
-    var custoTotal = materialsSum + roomCost;
-    if(!calcTouchedPrice){
-      var defaultMargin = clamp(Number(state.settings.defaultMargin)||30, 0, 95);
-      var suggested = defaultMargin>=95 ? custoTotal/0.05 : custoTotal/(1-defaultMargin/100);
-      priceInput.value = suggested.toFixed(2);
-    }
-    var price = Number(priceInput.value)||0;
-    var lucro = price - custoTotal;
-    var margem = price>0 ? (lucro/price*100) : 0;
-    document.getElementById('sumMaterials').textContent = fmtMoney(materialsSum);
-    document.getElementById('sumRoom').textContent = fmtMoney(roomCost);
-    document.getElementById('sumCusto').textContent = fmtMoney(custoTotal);
-    document.getElementById('sumLucro').textContent = fmtMoney(lucro);
-    document.getElementById('sumMargem').textContent = margem.toFixed(0)+'%';
-    return { materialsSum:materialsSum, roomCost:roomCost, custoTotal:custoTotal, margin:margem, price:price };
-  }
-  document.getElementById('fRoom').addEventListener('input', updateTotals);
-  updateTotals();
-
-  document.getElementById('saveTreatment').addEventListener('click', async function(){
-    var name = document.getElementById('fPatient').value.trim();
-    if(!name){ showToast('Informe o nome do paciente'); return; }
-    var desc = descSelect.value==='__outro__' ? descCustom.value.trim() : descSelect.value;
-    if(!desc){ showToast('Informe o procedimento'); return; }
-    var date = document.getElementById('fDate').value || todayISO();
-    var materials = getMaterials();
-    var totals = updateTotals();
-    var price = Number(priceInput.value)||0;
-    var paidNow = Number(document.getElementById('fPaidNow').value)||0;
-    var btn = this;
-    btn.disabled = true;
-    try{
-      var patient = findPatientByName(name);
-      var patientId;
-      if(patient){ patientId = patient.id; }
-      else{
-        var newPatientRef = await addDoc(collection(db,'patients'), { name:name, phone:'', notes:'', createdAt: todayISO() });
-        patientId = newPatientRef.id;
-      }
-      await addDoc(collection(db,'treatments'), {
-        patientId: patientId, date: date, description: desc,
-        materials: materials, materialsCost: totals.materialsSum, roomCost: totals.roomCost, totalCost: totals.custoTotal,
-        margin: totals.margin, price: price, paid: paidNow
-      });
-      showToast('Atendimento salvo!');
-      renderCalc();
-    }catch(err){
-      showToast('Erro ao salvar. Tenta de novo.');
-      btn.disabled = false;
-    }
-  });
-}
-
 // ---------- AGENDA ----------
 var agendaFilter = 'proximos';
+var apptTouchedPrice = false;
 
 function appointmentPatientName(a){
   var p = state.patients.filter(function(x){return x.id===a.patientId;})[0];
   return p ? p.name : '(paciente removido)';
 }
 
+function dayLabel(dateStr){
+  var today = todayISO();
+  var tm = new Date(); tm.setDate(tm.getDate()+1);
+  var tomorrow = tm.toISOString().slice(0,10);
+  if(dateStr===today) return 'Hoje';
+  if(dateStr===tomorrow) return 'Amanhã';
+  var d = new Date(dateStr+'T00:00:00');
+  var s = d.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+function groupByDay(list){
+  var groups = {}, order = [];
+  list.forEach(function(a){
+    if(!groups[a.date]){ groups[a.date]=[]; order.push(a.date); }
+    groups[a.date].push(a);
+  });
+  return order.map(function(d){ return { date:d, items:groups[d] }; });
+}
+
 function renderAgenda(){
+  apptTouchedPrice = false;
   var content = document.getElementById('content');
   var procedureOptions = PROCEDURE_GROUPS.map(function(g){
     return '<optgroup label="'+escapeHtml(g.label)+'">'+g.options.map(function(o){
@@ -504,6 +392,33 @@ function renderAgenda(){
         '<div class="field"><label class="field-label">Data</label><input type="date" id="aDate" value="'+todayISO()+'"></div>' +
         '<div class="field"><label class="field-label">Horário</label><input type="time" id="aTime" value="09:00"></div>' +
       '</div>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<label class="field-label" style="margin-bottom:8px;">Materiais de custo alto usados</label>' +
+      '<div id="materialsList"></div>' +
+      '<button type="button" class="link-btn" id="addMaterial">+ adicionar material</button>' +
+      '<p class="helper-text" style="margin-top:8px;">Use para itens caros específicos deste atendimento, como toxina botulínica ou ácido hialurônico. Materiais de baixo custo (luvas, algodão, gel clareador) lance direto na aba Estoque.</p>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<div class="field"><label class="field-label">Custo da sala neste atendimento</label>' +
+        '<input type="number" id="aRoom" min="0" step="0.01" value="'+(Number(state.settings.defaultRoomCost)||0)+'"></div>' +
+      '<div class="totals" style="border-top:none;margin-top:0;padding-top:0;">' +
+        '<div class="line"><span>Custo com materiais</span><span id="sumMaterials">'+fmtMoney(0)+'</span></div>' +
+        '<div class="line"><span>Custo da sala</span><span id="sumRoom">'+fmtMoney(0)+'</span></div>' +
+        '<div class="line"><span>Custo total</span><span id="sumCusto">'+fmtMoney(0)+'</span></div>' +
+      '</div>' +
+      '<div class="field" style="margin-top:12px;margin-bottom:0;"><label class="field-label">Valor a cobrar (estimado)</label>' +
+        '<input type="number" id="aPrice" min="0" step="0.01" value="0"></div>' +
+      '<p class="helper-text">Preencha quanto pretende cobrar — o lucro e a margem abaixo são calculados automaticamente. Dá pra ajustar esse valor na hora de concluir o atendimento.</p>' +
+      '<div class="totals">' +
+        '<div class="line big"><span>Lucro estimado</span><span id="sumLucro">'+fmtMoney(0)+'</span></div>' +
+        '<div class="line profit"><span>Margem</span><span id="sumMargem">0%</span></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="card">' +
       '<div class="field" style="margin-bottom:0;"><label class="field-label">Observações (opcional)</label>' +
         '<input type="text" id="aNotes" placeholder="Ex: primeira consulta, retorno..."></div>' +
       '<button class="btn" id="addAppt" style="margin-top:12px;">Agendar</button>' +
@@ -522,34 +437,138 @@ function renderAgenda(){
     descCustomWrap.style.display = descSelect.value==='__outro__' ? 'block' : 'none';
   });
 
+  var materialsList = document.getElementById('materialsList');
+  function addMaterialRow(name, cost){
+    var row = document.createElement('div');
+    row.className = 'material-row';
+    row.innerHTML =
+      '<input type="text" class="mName" placeholder="Ex: Toxina botulínica..." value="'+escapeHtml(name||'')+'">' +
+      '<input type="number" class="mCost" placeholder="R$" min="0" step="0.01" value="'+(cost||'')+'">' +
+      '<button type="button" class="icon-btn removeMaterial">'+ICONS.trash+'</button>';
+    materialsList.appendChild(row);
+    row.querySelector('.removeMaterial').addEventListener('click', function(){ row.remove(); updateTotals(); });
+    row.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', updateTotals); });
+  }
+  addMaterialRow('', '');
+  document.getElementById('addMaterial').addEventListener('click', function(){ addMaterialRow('',''); });
+
+  function getMaterials(){
+    return Array.prototype.map.call(materialsList.querySelectorAll('.material-row'), function(row){
+      return { label: row.querySelector('.mName').value.trim(), cost: Number(row.querySelector('.mCost').value)||0 };
+    }).filter(function(m){ return m.label || m.cost; });
+  }
+
+  var priceInput = document.getElementById('aPrice');
+  priceInput.addEventListener('input', function(){ apptTouchedPrice = true; updateTotals(); });
+
+  function updateTotals(){
+    var materialsSum = getMaterials().reduce(function(a,m){return a+m.cost;},0);
+    var roomCost = Number(document.getElementById('aRoom').value)||0;
+    var custoTotal = materialsSum + roomCost;
+    if(!apptTouchedPrice){
+      var defaultMargin = clamp(Number(state.settings.defaultMargin)||30, 0, 95);
+      var suggested = defaultMargin>=95 ? custoTotal/0.05 : custoTotal/(1-defaultMargin/100);
+      priceInput.value = suggested.toFixed(2);
+    }
+    var price = Number(priceInput.value)||0;
+    var lucro = price - custoTotal;
+    var margem = price>0 ? (lucro/price*100) : 0;
+    document.getElementById('sumMaterials').textContent = fmtMoney(materialsSum);
+    document.getElementById('sumRoom').textContent = fmtMoney(roomCost);
+    document.getElementById('sumCusto').textContent = fmtMoney(custoTotal);
+    document.getElementById('sumLucro').textContent = fmtMoney(lucro);
+    document.getElementById('sumMargem').textContent = margem.toFixed(0)+'%';
+    return { materialsSum:materialsSum, roomCost:roomCost, custoTotal:custoTotal, margin:margem, price:price };
+  }
+  document.getElementById('aRoom').addEventListener('input', updateTotals);
+  updateTotals();
+
   Array.prototype.forEach.call(document.getElementById('agendaSegment').querySelectorAll('button'), function(btn){
     btn.addEventListener('click', function(){ agendaFilter = btn.getAttribute('data-f'); renderAgenda(); });
   });
 
+  // ---- lista agrupada por dia ----
   var listEl = document.getElementById('apptList');
   var list = state.appointments.filter(function(a){ return agendaFilter==='proximos' ? !a.done : !!a.done; });
-  list.sort(function(a,b){
-    var ka = a.date+(a.time||''), kb = b.date+(b.time||'');
-    return agendaFilter==='proximos' ? ka.localeCompare(kb) : kb.localeCompare(ka);
-  });
-  if(list.length===0){
+  list.sort(function(a,b){ return (a.date+(a.time||'')).localeCompare(b.date+(b.time||'')); });
+  var groups = groupByDay(list);
+  if(agendaFilter==='concluidos') groups.reverse();
+
+  if(groups.length===0){
     listEl.innerHTML = '<div class="empty-state">'+(agendaFilter==='proximos' ? 'Nenhuma consulta agendada.' : 'Nenhuma consulta concluída ainda.')+'</div>';
   } else {
-    listEl.innerHTML = list.map(function(a){
-      return '<div class="treat-item" data-id="'+a.id+'">' +
-        '<div class="top"><div><div class="desc">'+escapeHtml(appointmentPatientName(a))+' — '+escapeHtml(a.description)+'</div>' +
-        '<div class="date">'+fmtDate(a.date)+(a.time ? ' às '+a.time : '')+'</div></div></div>' +
-        (a.notes ? '<p class="helper-text" style="margin:4px 0 0;">'+escapeHtml(a.notes)+'</p>' : '') +
-        '<div class="row-2" style="margin-top:8px;">' +
-          (agendaFilter==='proximos' ? '<button class="btn secondary doneAppt" data-id="'+a.id+'">Marcar concluído</button>' : '<button class="btn secondary undoneAppt" data-id="'+a.id+'">Reabrir</button>') +
-          '<button class="icon-btn delAppt" data-id="'+a.id+'">'+ICONS.trash+' <span style="font-size:.74rem;margin-left:4px;">excluir</span></button>' +
-        '</div>' +
+    listEl.innerHTML = groups.map(function(g){
+      return '<div class="agenda-day-group">' +
+        '<div class="agenda-day-header'+(g.date===todayISO()?' today':'')+'">'+dayLabel(g.date)+'</div>' +
+        g.items.map(function(a){
+          var tbal = (a.price||0) - (a.paid||0);
+          var statusClass = tbal<=0.004 ? 'pago' : ((a.paid||0)>0 ? 'parcial' : 'pendente');
+          var statusLabel = statusClass==='pago' ? 'pago' : (statusClass==='parcial' ? 'parcial' : 'pendente');
+          return '<div class="appt-card" data-id="'+a.id+'">' +
+            '<div class="appt-time">'+(a.time||'—')+'</div>' +
+            '<div class="appt-body">' +
+              '<div class="desc">'+escapeHtml(appointmentPatientName(a))+'</div>' +
+              '<div class="proc">'+escapeHtml(a.description)+'</div>' +
+              (a.notes ? '<p class="helper-text" style="margin:4px 0 0;">'+escapeHtml(a.notes)+'</p>' : '') +
+              (agendaFilter==='proximos' ?
+                ('<p class="helper-text" style="margin:6px 0 0;">Estimado: <b style="color:var(--ink);">'+fmtMoney(a.price||0)+'</b></p>' +
+                '<div class="row-2" style="margin-top:8px;">' +
+                  '<button class="btn secondary concludeAppt" data-id="'+a.id+'">Concluir e cobrar</button>' +
+                  '<button class="icon-btn delAppt" data-id="'+a.id+'">'+ICONS.trash+' <span style="font-size:.74rem;margin-left:4px;">excluir</span></button>' +
+                '</div>' +
+                '<div class="conclude-form" id="conclude-'+a.id+'" style="display:none;margin-top:10px;">' +
+                  '<div class="row-2">' +
+                    '<div class="field"><label class="field-label">Valor cobrado</label><input type="number" class="ccPrice" min="0" step="0.01" value="'+(a.price||0)+'"></div>' +
+                    '<div class="field"><label class="field-label">Recebido agora</label><input type="number" class="ccPaid" min="0" step="0.01" value="0"></div>' +
+                  '</div>' +
+                  '<button class="btn confirmConclude" data-id="'+a.id+'">Confirmar atendimento</button>' +
+                '</div>')
+              :
+                ('<div class="figures" style="grid-template-columns:1fr 1fr;">' +
+                  '<div>Cobrado<b>'+fmtMoney(a.price||0)+'</b></div>' +
+                  '<div>Recebido<b>'+fmtMoney(a.paid||0)+'</b></div>' +
+                '</div>' +
+                '<div class="row-2" style="margin-top:8px;align-items:center;">' +
+                  '<span class="pill '+statusClass+'">'+statusLabel+'</span>' +
+                  '<button class="btn secondary undoneAppt" data-id="'+a.id+'">Reabrir</button>' +
+                '</div>')
+              ) +
+            '</div>' +
+          '</div>';
+        }).join('') +
       '</div>';
     }).join('');
-    Array.prototype.forEach.call(listEl.querySelectorAll('.doneAppt'), function(btn){
+
+    Array.prototype.forEach.call(listEl.querySelectorAll('.concludeAppt'), function(btn){
+      btn.addEventListener('click', function(){
+        var form = document.getElementById('conclude-'+btn.getAttribute('data-id'));
+        form.style.display = form.style.display==='none' ? 'block' : 'none';
+      });
+    });
+    Array.prototype.forEach.call(listEl.querySelectorAll('.confirmConclude'), function(btn){
       btn.addEventListener('click', async function(){
-        try{ await updateDoc(doc(db,'appointments', btn.getAttribute('data-id')), { done:true }); showToast('Marcado como concluído'); renderAgenda(); }
-        catch(err){ showToast('Erro ao atualizar.'); }
+        var id = btn.getAttribute('data-id');
+        var a = state.appointments.filter(function(x){return x.id===id;})[0];
+        if(!a) return;
+        var form = document.getElementById('conclude-'+id);
+        var price = Number(form.querySelector('.ccPrice').value)||0;
+        var paid = Number(form.querySelector('.ccPaid').value)||0;
+        var custoTotal = (a.materialsCost||0)+(a.roomCost||0);
+        var margin = price>0 ? ((price-custoTotal)/price*100) : 0;
+        btn.disabled = true;
+        try{
+          await addDoc(collection(db,'treatments'), {
+            patientId: a.patientId, date: a.date, description: a.description,
+            materials: a.materials||[], materialsCost: a.materialsCost||0, roomCost: a.roomCost||0, totalCost: custoTotal,
+            margin: margin, price: price, paid: paid
+          });
+          await updateDoc(doc(db,'appointments', id), { done:true, price:price, paid:paid });
+          showToast('Atendimento concluído!');
+          renderAgenda();
+        }catch(err){
+          showToast('Erro ao concluir. Tenta de novo.');
+          btn.disabled = false;
+        }
       });
     });
     Array.prototype.forEach.call(listEl.querySelectorAll('.undoneAppt'), function(btn){
@@ -580,6 +599,8 @@ function renderAgenda(){
     var date = document.getElementById('aDate').value || todayISO();
     var time = document.getElementById('aTime').value || '';
     var notes = document.getElementById('aNotes').value.trim();
+    var materials = getMaterials();
+    var totals = updateTotals();
     var btn = this;
     btn.disabled = true;
     try{
@@ -590,7 +611,11 @@ function renderAgenda(){
         var newPatientRef = await addDoc(collection(db,'patients'), { name:name, phone:'', notes:'', createdAt: todayISO() });
         patientId = newPatientRef.id;
       }
-      await addDoc(collection(db,'appointments'), { patientId:patientId, date:date, time:time, description:desc, notes:notes, done:false });
+      await addDoc(collection(db,'appointments'), {
+        patientId:patientId, date:date, time:time, description:desc, notes:notes, done:false,
+        materials: materials, materialsCost: totals.materialsSum, roomCost: totals.roomCost,
+        totalCost: totals.custoTotal, price: totals.price, margin: totals.margin, paid: 0
+      });
       showToast('Consulta agendada!');
       renderAgenda();
     }catch(err){
@@ -960,7 +985,7 @@ var unsubscribers = [];
 function stopListeners(){ unsubscribers.forEach(function(u){ u(); }); unsubscribers = []; }
 
 function onDataChanged(){
-  if(activeTab==='calc' || activeTab==='agenda') return;
+  if(activeTab==='agenda') return;
   var el = document.activeElement;
   if(activeTab==='settings' && el && (el.id==='sRoom' || el.id==='sMargin')) return;
   renderAll();
