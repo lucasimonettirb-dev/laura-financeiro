@@ -265,6 +265,7 @@ var PROCEDURE_GROUPS = [
   { label:'Odontologia', options:['Avaliação / Consulta','Limpeza (Profilaxia)','Restauração','Extração','Tratamento de canal','Clareamento dental','Prótese','Facetas','Aplicação de flúor'] },
   { label:'Harmonização Facial', options:['Botox (Toxina botulínica)','Preenchimento (Ácido hialurônico)','Bichectomia','Fios de sustentação','Skinbooster'] }
 ];
+var LOCATIONS = ['Recife','Caruaru'];
 
 var state = { settings:{ defaultRoomCost:0, defaultMargin:30 }, patients:[], treatments:[], purchases:[], appointments:[] };
 
@@ -388,6 +389,13 @@ function renderAgenda(){
         '<label class="field-label">Qual procedimento?</label>' +
         '<input type="text" id="aDescCustom" placeholder="Digite o procedimento">' +
       '</div>' +
+      '<div class="field"><label class="field-label">Local do atendimento</label>' +
+        '<select id="aLocationSelect">'+LOCATIONS.map(function(l){return '<option value="'+escapeHtml(l)+'">'+escapeHtml(l)+'</option>';}).join('')+'<option value="__outro__">Outro (digitar)</option></select>' +
+      '</div>' +
+      '<div class="field" id="aLocationCustomWrap" style="display:none;">' +
+        '<label class="field-label">Qual local?</label>' +
+        '<input type="text" id="aLocationCustom" placeholder="Digite o local">' +
+      '</div>' +
       '<div class="row-2">' +
         '<div class="field"><label class="field-label">Data</label><input type="date" id="aDate" value="'+todayISO()+'"></div>' +
         '<div class="field"><label class="field-label">Horário</label><input type="time" id="aTime" value="09:00"></div>' +
@@ -435,6 +443,13 @@ function renderAgenda(){
   var descCustom = document.getElementById('aDescCustom');
   descSelect.addEventListener('change', function(){
     descCustomWrap.style.display = descSelect.value==='__outro__' ? 'block' : 'none';
+  });
+
+  var locationSelect = document.getElementById('aLocationSelect');
+  var locationCustomWrap = document.getElementById('aLocationCustomWrap');
+  var locationCustom = document.getElementById('aLocationCustom');
+  locationSelect.addEventListener('change', function(){
+    locationCustomWrap.style.display = locationSelect.value==='__outro__' ? 'block' : 'none';
   });
 
   var materialsList = document.getElementById('materialsList');
@@ -508,7 +523,7 @@ function renderAgenda(){
             '<div class="appt-time">'+(a.time||'—')+'</div>' +
             '<div class="appt-body">' +
               '<div class="desc">'+escapeHtml(appointmentPatientName(a))+'</div>' +
-              '<div class="proc">'+escapeHtml(a.description)+'</div>' +
+              '<div class="proc">'+escapeHtml(a.description)+(a.location ? ' · '+escapeHtml(a.location) : '')+'</div>' +
               (a.notes ? '<p class="helper-text" style="margin:4px 0 0;">'+escapeHtml(a.notes)+'</p>' : '') +
               (agendaFilter==='proximos' ?
                 ('<p class="helper-text" style="margin:6px 0 0;">Estimado: <b style="color:var(--ink);">'+fmtMoney(a.price||0)+'</b></p>' +
@@ -558,7 +573,7 @@ function renderAgenda(){
         btn.disabled = true;
         try{
           await addDoc(collection(db,'treatments'), {
-            patientId: a.patientId, date: a.date, description: a.description,
+            patientId: a.patientId, date: a.date, description: a.description, location: a.location||'',
             materials: a.materials||[], materialsCost: a.materialsCost||0, roomCost: a.roomCost||0, totalCost: custoTotal,
             margin: margin, price: price, paid: paid
           });
@@ -596,6 +611,8 @@ function renderAgenda(){
     if(!name){ showToast('Informe o nome do paciente'); return; }
     var desc = descSelect.value==='__outro__' ? descCustom.value.trim() : descSelect.value;
     if(!desc){ showToast('Informe o procedimento'); return; }
+    var location = locationSelect.value==='__outro__' ? locationCustom.value.trim() : locationSelect.value;
+    if(!location){ showToast('Informe o local do atendimento'); return; }
     var date = document.getElementById('aDate').value || todayISO();
     var time = document.getElementById('aTime').value || '';
     var notes = document.getElementById('aNotes').value.trim();
@@ -612,7 +629,7 @@ function renderAgenda(){
         patientId = newPatientRef.id;
       }
       await addDoc(collection(db,'appointments'), {
-        patientId:patientId, date:date, time:time, description:desc, notes:notes, done:false,
+        patientId:patientId, date:date, time:time, description:desc, location:location, notes:notes, done:false,
         materials: materials, materialsCost: totals.materialsSum, roomCost: totals.roomCost,
         totalCost: totals.custoTotal, price: totals.price, margin: totals.margin, paid: 0
       });
@@ -757,7 +774,7 @@ function renderPatientDetail(content){
     '<h2 class="section-title">'+escapeHtml(p.name)+'</h2>' +
     (p.phone ? '<p class="helper-text" style="margin-bottom:6px;">'+escapeHtml(p.phone)+'</p>' : '') +
     (p.notes ? '<p class="helper-text">'+escapeHtml(p.notes)+'</p>' : '') +
-    (nextAppt ? '<div class="notice" style="margin-bottom:0;">Próxima consulta: '+fmtDate(nextAppt.date)+(nextAppt.time?' às '+nextAppt.time:'')+' — '+escapeHtml(nextAppt.description)+'</div>' : '') +
+    (nextAppt ? '<div class="notice" style="margin-bottom:0;">Próxima consulta: '+fmtDate(nextAppt.date)+(nextAppt.time?' às '+nextAppt.time:'')+' — '+escapeHtml(nextAppt.description)+(nextAppt.location?' ('+escapeHtml(nextAppt.location)+')':'')+'</div>' : '') +
     '<div class="stat-grid" style="margin-top:8px;margin-bottom:0;">' +
       '<div class="stat-tile accent"><div class="label">Recebido</div><div class="value">'+fmtMoney(bal.paid)+'</div></div>' +
       '<div class="stat-tile '+(bal.balance>0.004?'danger':'')+'"><div class="label">Saldo</div><div class="value">'+fmtMoney(bal.balance)+'</div></div>' +
