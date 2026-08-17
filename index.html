@@ -285,7 +285,8 @@ var ICONS = {
   trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
   eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
-  eyeOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.6 21.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a21.6 21.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+  eyeOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.6 21.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a21.6 21.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>',
+  whatsapp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.36 7.56L3 20l1.05-5.44A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8.5 10.5c.3 2 2 3.7 4 4"/></svg>'
 };
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -379,9 +380,23 @@ function renderAll(){
 var agendaFilter = 'proximos';
 var apptTouchedPrice = false;
 
+function getPatient(id){
+  return state.patients.filter(function(x){return x.id===id;})[0];
+}
 function appointmentPatientName(a){
-  var p = state.patients.filter(function(x){return x.id===a.patientId;})[0];
+  var p = getPatient(a.patientId);
   return p ? p.name : '(paciente removido)';
+}
+function toWhatsAppDigits(phone){
+  var d = (phone||'').replace(/\D/g,'');
+  if(!d) return '';
+  if(d.length<=11) d = '55'+d;
+  return d;
+}
+function confirmMessage(a, patient){
+  var firstName = patient.name.trim().split(' ')[0];
+  return 'Olá, '+firstName+'! Aqui é do consultório da Dra. Laura Nunes. Passando para confirmar seu horário de '+
+    a.description+' no dia '+fmtDate(a.date)+(a.time?' às '+a.time:'')+(a.location?', em '+a.location:'')+'. Pode confirmar? 😊';
 }
 
 function dayLabel(dateStr){
@@ -565,9 +580,10 @@ function renderAgenda(){
               (a.notes ? '<p class="helper-text" style="margin:4px 0 0;">'+escapeHtml(a.notes)+'</p>' : '') +
               (agendaFilter==='proximos' ?
                 ('<p class="helper-text" style="margin:6px 0 0;">Estimado: <b style="color:var(--ink);">'+fmtMoney(a.price||0)+'</b></p>' +
-                '<div class="row-2" style="margin-top:8px;">' +
-                  '<button class="btn secondary concludeAppt" data-id="'+a.id+'">Concluir e cobrar</button>' +
-                  '<button class="icon-btn delAppt" data-id="'+a.id+'">'+ICONS.trash+' <span style="font-size:.74rem;margin-left:4px;">excluir</span></button>' +
+                '<div style="display:flex;gap:8px;margin-top:8px;">' +
+                  '<button class="btn secondary concludeAppt" data-id="'+a.id+'" style="flex:1;">Concluir e cobrar</button>' +
+                  '<button class="icon-btn waAppt" data-id="'+a.id+'" title="Confirmar por WhatsApp" style="border:1px solid var(--border);border-radius:9px;">'+ICONS.whatsapp+'</button>' +
+                  '<button class="icon-btn delAppt" data-id="'+a.id+'" title="Excluir" style="border:1px solid var(--border);border-radius:9px;">'+ICONS.trash+'</button>' +
                 '</div>' +
                 '<div class="conclude-form" id="conclude-'+a.id+'" style="display:none;margin-top:10px;">' +
                   '<div class="row-2">' +
@@ -637,9 +653,24 @@ function renderAgenda(){
           catch(err){ showToast('Erro ao excluir.'); }
         } else {
           btn.setAttribute('data-armed','1');
-          btn.querySelector('span').textContent='confirmar?';
-          setTimeout(function(){ if(btn.isConnected){btn.setAttribute('data-armed','0'); btn.querySelector('span').textContent='excluir';} }, 4000);
+          btn.style.color = 'var(--danger)';
+          btn.style.borderColor = 'var(--danger)';
+          btn.title = 'Clique de novo para confirmar a exclusão';
+          setTimeout(function(){ if(btn.isConnected){
+            btn.setAttribute('data-armed','0'); btn.style.color=''; btn.style.borderColor=''; btn.title='Excluir';
+          } }, 4000);
         }
+      });
+    });
+    Array.prototype.forEach.call(listEl.querySelectorAll('.waAppt'), function(btn){
+      btn.addEventListener('click', function(){
+        var a = state.appointments.filter(function(x){return x.id===btn.getAttribute('data-id');})[0];
+        if(!a) return;
+        var patient = getPatient(a.patientId);
+        if(!patient || !patient.phone){ showToast('Cadastre o telefone da paciente em Pacientes primeiro'); return; }
+        var digits = toWhatsAppDigits(patient.phone);
+        var msg = confirmMessage(a, patient);
+        window.open('https://wa.me/'+digits+'?text='+encodeURIComponent(msg), '_blank');
       });
     });
   }
