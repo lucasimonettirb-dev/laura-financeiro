@@ -184,8 +184,8 @@
   .treat-item .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;}
   .treat-item .desc{font-weight:700;font-size:.9rem;}
   .treat-item .date{font-size:.74rem;color:var(--ink-muted);}
-  .treat-item .figures{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:.75rem;color:var(--ink-muted);margin-top:8px;}
-  .treat-item .figures b{display:block;font-size:.86rem;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .figures{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:.75rem;color:var(--ink-muted);margin-top:8px;}
+  .figures b{display:block;font-size:.86rem;color:var(--ink);font-variant-numeric:tabular-nums;}
   .back-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;color:var(--accent-strong);font-weight:600;font-size:.88rem;}
   .back-row svg{width:18px;height:18px;}
 
@@ -728,13 +728,7 @@ function renderAgenda(){
                 '<div class="row-2" style="margin-top:8px;align-items:center;">' +
                   '<span class="pill '+statusClass+'">'+statusLabel+'</span>' +
                   '<button class="btn secondary undoneAppt" data-id="'+a.id+'">Reabrir</button>' +
-                '</div>' +
-                (a.hasReturn ? (
-                  '<div class="notice" style="margin:10px 0 0;padding:9px 11px;">' +
-                    '<span style="font-size:.78rem;">Retorno previsto pra ajuste — sala já cobrada.</span>' +
-                    '<button type="button" class="btn secondary scheduleReturn" data-id="'+a.id+'" style="margin-top:8px;">Agendar retorno</button>' +
-                  '</div>'
-                ) : ''))
+                '</div>')
               ) +
             '</div>' +
           '</div>';
