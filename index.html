@@ -481,7 +481,9 @@ function renderAgenda(){
     return '<optgroup label="'+escapeHtml(g.label)+'">'+g.options.map(function(o){
       return '<option value="'+escapeHtml(o)+'">'+escapeHtml(o)+'</option>';
     }).join('')+'</optgroup>';
-  }).join('') + '<option value="__outro__">Outro (digitar)</option>';
+  }).join('') +
+    '<option value="Retorno">Retorno (ajuste/retoque)</option>' +
+    '<option value="__outro__">Outro (digitar)</option>';
 
   content.innerHTML =
     '<div class="card">' +
@@ -528,12 +530,15 @@ function renderAgenda(){
         '<div class="line"><span>Custo da sala</span><span id="sumRoom">'+fmtMoney(0)+'</span></div>' +
         '<div class="line"><span>Custo total</span><span id="sumCusto">'+fmtMoney(0)+'</span></div>' +
       '</div>' +
-      '<div class="field" style="margin-top:12px;"><label class="field-label">Valor a cobrar (estimado)</label>' +
-        '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="aPrice" value="'+moneyDisplay(editingAppt ? (editingAppt.price||0) : 0)+'"></div></div>' +
-      '<p class="helper-text">Preencha quanto pretende cobrar — o lucro e a margem abaixo são calculados automaticamente. Dá pra ajustar esse valor na hora de concluir o atendimento.</p>' +
-      '<div class="totals">' +
-        '<div class="line big"><span>Lucro estimado</span><span id="sumLucro">'+fmtMoney(0)+'</span></div>' +
-        '<div class="line profit"><span>Margem</span><span id="sumMargem">0%</span></div>' +
+      '<p class="helper-text" id="retornoNote" style="display:none;margin-top:12px;margin-bottom:0;">Retorno não gera cobrança pra paciente — só o custo da sala (que você paga) fica registrado.</p>' +
+      '<div id="priceSection">' +
+        '<div class="field" style="margin-top:12px;"><label class="field-label">Valor a cobrar (estimado)</label>' +
+          '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="aPrice" value="'+moneyDisplay(editingAppt ? (editingAppt.price||0) : 0)+'"></div></div>' +
+        '<p class="helper-text">Preencha quanto pretende cobrar — o lucro e a margem abaixo são calculados automaticamente. Dá pra ajustar esse valor na hora de concluir o atendimento.</p>' +
+        '<div class="totals">' +
+          '<div class="line big"><span>Lucro estimado</span><span id="sumLucro">'+fmtMoney(0)+'</span></div>' +
+          '<div class="line profit"><span>Margem</span><span id="sumMargem">0%</span></div>' +
+        '</div>' +
       '</div>' +
     '</div>' +
 
@@ -556,8 +561,18 @@ function renderAgenda(){
   var descSelect = document.getElementById('aDescSelect');
   var descCustomWrap = document.getElementById('aDescCustomWrap');
   var descCustom = document.getElementById('aDescCustom');
+  function updateRetornoUI(){
+    var isRetorno = descSelect.value === 'Retorno';
+    document.getElementById('priceSection').style.display = isRetorno ? 'none' : 'block';
+    document.getElementById('retornoNote').style.display = isRetorno ? 'block' : 'none';
+    if(isRetorno){
+      document.getElementById('aPrice').value = '0,00';
+      apptTouchedPrice = true;
+    }
+  }
   descSelect.addEventListener('change', function(){
     descCustomWrap.style.display = descSelect.value==='__outro__' ? 'block' : 'none';
+    updateRetornoUI();
   });
 
   var locationSelect = document.getElementById('aLocationSelect');
@@ -567,8 +582,8 @@ function renderAgenda(){
     locationCustomWrap.style.display = locationSelect.value==='__outro__' ? 'block' : 'none';
   });
 
+  var knownDescs = PROCEDURE_GROUPS.reduce(function(a,g){return a.concat(g.options);},[]).concat(['Retorno']);
   if(editingAppt){
-    var knownDescs = PROCEDURE_GROUPS.reduce(function(a,g){return a.concat(g.options);},[]);
     if(knownDescs.indexOf(editingAppt.description)>=0){
       descSelect.value = editingAppt.description;
     } else {
@@ -588,8 +603,7 @@ function renderAgenda(){
       renderAgenda();
     });
   } else if(prefill){
-    var knownDescs2 = PROCEDURE_GROUPS.reduce(function(a,g){return a.concat(g.options);},[]);
-    if(knownDescs2.indexOf(prefill.description)>=0){
+    if(knownDescs.indexOf(prefill.description)>=0){
       descSelect.value = prefill.description;
     } else {
       descSelect.value = '__outro__';
@@ -604,6 +618,7 @@ function renderAgenda(){
       locationCustom.value = prefill.location||'';
     }
   }
+  updateRetornoUI();
 
   var materialsList = document.getElementById('materialsList');
   function addMaterialRow(name, cost){
@@ -805,9 +820,9 @@ function renderAgenda(){
         if(!a) return;
         returnPrefill = {
           patientName: appointmentPatientName(a),
-          description: a.description+' (Retorno)',
+          description: 'Retorno',
           location: a.location||'',
-          notes: 'Retorno do atendimento de '+fmtDate(a.date)
+          notes: 'Retorno de '+a.description+' — atendimento de '+fmtDate(a.date)
         };
         agendaFilter = 'proximos';
         renderAgenda();
@@ -840,6 +855,7 @@ function renderAgenda(){
     var hasReturn = document.getElementById('aHasReturn').checked;
     var materials = getMaterials();
     var totals = updateTotals();
+    if(desc==='Retorno'){ totals.price = 0; totals.margin = 0; }
     var btn = this;
     btn.disabled = true;
     try{
