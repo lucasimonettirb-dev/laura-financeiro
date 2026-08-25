@@ -179,6 +179,7 @@
   .pill.pago{background:var(--accent-soft);color:var(--accent-strong);}
   .pill.parcial{background:var(--gold-soft);color:var(--gold);}
   .pill.pendente{background:var(--danger-soft);color:var(--danger);}
+  .pill.retorno{background:var(--gold-soft);color:var(--gold);margin-left:6px;}
 
   .treat-item{border:1px solid var(--border);border-radius:var(--radius);padding:12px 13px;margin-bottom:10px;background:var(--surface);}
   .treat-item .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;}
@@ -1035,7 +1036,7 @@ function renderPatientDetail(content){
       var statusClass = tbal<=0.004 ? 'pago' : (t.paid>0?'parcial':'pendente');
       var statusLabel = tbal<=0.004 ? 'pago' : (t.paid>0?'parcial':'pendente');
       return '<div class="treat-item" data-id="'+t.id+'">' +
-        '<div class="top"><div><div class="desc">'+escapeHtml(t.description)+'</div><div class="date">'+fmtDate(t.date)+'</div></div>' +
+        '<div class="top"><div><div class="desc">'+escapeHtml(t.description)+(t.hasReturn?' <span class="pill retorno">retorno previsto</span>':'')+'</div><div class="date">'+fmtDate(t.date)+'</div></div>' +
         '<span class="pill '+statusClass+'">'+statusLabel+'</span></div>' +
         '<div class="figures">' +
           '<div>Custo<b>'+fmtMoney(t.totalCost)+'</b></div>' +
