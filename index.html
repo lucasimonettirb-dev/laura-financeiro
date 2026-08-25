@@ -120,6 +120,9 @@
   label.field-label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;
     color:var(--ink-muted);margin:0 0 5px;font-weight:600;}
   .field{margin-bottom:12px;}
+  .checkbox-row{display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .checkbox-row input{width:18px;height:18px;flex-shrink:0;accent-color:var(--accent);cursor:pointer;}
+  .checkbox-row span{font-size:.9rem;font-weight:600;}
   input[type=text],input[type=number],input[type=date],input[type=time],input[type=tel],select,textarea{
     width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);
     font-size:.92rem;color:var(--ink);
@@ -311,6 +314,38 @@ function fmtDate(iso){ if(!iso) return ''; var p=iso.split('-'); return p[2]+'/'
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function clamp(n,min,max){ return Math.min(max,Math.max(min,n)); }
 
+function moneyDisplay(v){
+  v = Number(v)||0;
+  return v.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function parseMoneyStr(s){
+  if(s==null) return 0;
+  s = String(s).trim();
+  if(!s) return 0;
+  s = s.replace(/[^\d.,-]/g,'');
+  var lastComma = s.lastIndexOf(','), lastDot = s.lastIndexOf('.');
+  var lastSep = Math.max(lastComma, lastDot);
+  var n;
+  if(lastSep===-1){ n = parseFloat(s); }
+  else{
+    var intPart = s.slice(0,lastSep).replace(/[.,]/g,'');
+    var decPart = s.slice(lastSep+1).replace(/[.,]/g,'');
+    n = parseFloat((intPart||'0')+'.'+(decPart||'0'));
+  }
+  return isNaN(n) ? 0 : n;
+}
+function wireMoneyInput(input){
+  if(!input) return;
+  input.setAttribute('inputmode','decimal');
+  input.addEventListener('focus', function(){
+    var n = parseMoneyStr(input.value);
+    input.value = n ? String(n).replace('.',',') : '';
+  });
+  input.addEventListener('blur', function(){
+    input.value = moneyDisplay(parseMoneyStr(input.value));
+  });
+}
+
 var PROCEDURE_GROUPS = [
   { label:'Odontologia', options:['Avaliação / Consulta','Limpeza (Profilaxia)','Restauração','Extração','Tratamento de canal','Clareamento dental','Prótese','Facetas','Aplicação de flúor'] },
   { label:'Harmonização Facial', options:['Botox (Toxina botulínica)','Preenchimento (Ácido hialurônico)','Bichectomia','Fios de sustentação','Skinbooster'] }
@@ -390,6 +425,7 @@ function renderAll(){
 // ---------- AGENDA ----------
 var agendaFilter = 'proximos';
 var editingApptId = null;
+var returnPrefill = null;
 var apptTouchedPrice = false;
 
 function getPatient(id){
@@ -438,7 +474,9 @@ function renderAgenda(){
   var content = document.getElementById('content');
   var editingAppt = editingApptId ? state.appointments.filter(function(x){return x.id===editingApptId;})[0] : null;
   if(editingApptId && !editingAppt){ editingApptId = null; }
-  apptTouchedPrice = !!editingAppt;
+  var prefill = editingAppt ? null : returnPrefill;
+  returnPrefill = null;
+  apptTouchedPrice = !!editingAppt || !!prefill;
   var procedureOptions = PROCEDURE_GROUPS.map(function(g){
     return '<optgroup label="'+escapeHtml(g.label)+'">'+g.options.map(function(o){
       return '<option value="'+escapeHtml(o)+'">'+escapeHtml(o)+'</option>';
@@ -452,7 +490,7 @@ function renderAgenda(){
         (editingAppt ? '<button type="button" class="link-btn" id="cancelEditAppt">cancelar</button>' : '') +
       '</div>' +
       '<div class="field" style="margin-top:12px;"><label class="field-label">Paciente</label>' +
-        '<input type="text" id="aPatient" list="patientDatalist" placeholder="Nome do paciente" autocomplete="off" value="'+(editingAppt?escapeHtml(appointmentPatientName(editingAppt)):'')+'">' +
+        '<input type="text" id="aPatient" list="patientDatalist" placeholder="Nome do paciente" autocomplete="off" value="'+(editingAppt?escapeHtml(appointmentPatientName(editingAppt)):(prefill?escapeHtml(prefill.patientName):''))+'">' +
         '<datalist id="patientDatalist">'+state.patients.map(function(p){return '<option value="'+escapeHtml(p.name)+'">';}).join('')+'</datalist>' +
       '</div>' +
       '<div class="field"><label class="field-label">Procedimento</label>' +
@@ -484,14 +522,14 @@ function renderAgenda(){
 
     '<div class="card">' +
       '<div class="field"><label class="field-label">Custo da sala neste atendimento</label>' +
-        '<div class="money-field"><span class="money-prefix">R$</span><input type="number" id="aRoom" min="0" step="0.01" value="'+(editingAppt ? (editingAppt.roomCost||0) : (Number(state.settings.defaultRoomCost)||0))+'"></div></div>' +
+        '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="aRoom" value="'+moneyDisplay(editingAppt ? (editingAppt.roomCost||0) : (prefill ? 0 : (Number(state.settings.defaultRoomCost)||0)))+'"></div></div>' +
       '<div class="totals" style="border-top:none;margin-top:0;padding-top:0;">' +
         '<div class="line"><span>Custo com materiais</span><span id="sumMaterials">'+fmtMoney(0)+'</span></div>' +
         '<div class="line"><span>Custo da sala</span><span id="sumRoom">'+fmtMoney(0)+'</span></div>' +
         '<div class="line"><span>Custo total</span><span id="sumCusto">'+fmtMoney(0)+'</span></div>' +
       '</div>' +
       '<div class="field" style="margin-top:12px;"><label class="field-label">Valor a cobrar (estimado)</label>' +
-        '<div class="money-field"><span class="money-prefix">R$</span><input type="number" id="aPrice" min="0" step="0.01" value="'+(editingAppt ? (editingAppt.price||0) : 0)+'"></div></div>' +
+        '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="aPrice" value="'+moneyDisplay(editingAppt ? (editingAppt.price||0) : 0)+'"></div></div>' +
       '<p class="helper-text">Preencha quanto pretende cobrar — o lucro e a margem abaixo são calculados automaticamente. Dá pra ajustar esse valor na hora de concluir o atendimento.</p>' +
       '<div class="totals">' +
         '<div class="line big"><span>Lucro estimado</span><span id="sumLucro">'+fmtMoney(0)+'</span></div>' +
@@ -500,8 +538,12 @@ function renderAgenda(){
     '</div>' +
 
     '<div class="card">' +
+      '<div class="field">' +
+        '<label class="checkbox-row"><input type="checkbox" id="aHasReturn" '+((editingAppt&&editingAppt.hasReturn)?'checked':'')+'><span>Tem retorno previsto?</span></label>' +
+        '<p class="helper-text" style="margin-top:6px;margin-bottom:0;">Marque se essa consulta já inclui uma volta da paciente pra ajuste ou retoque — o aluguel da sala já foi cobrado agora e não precisa ser cobrado de novo na volta.</p>' +
+      '</div>' +
       '<div class="field" style="margin-bottom:0;"><label class="field-label">Observações (opcional)</label>' +
-        '<input type="text" id="aNotes" placeholder="Ex: primeira consulta, retorno..." value="'+(editingAppt?escapeHtml(editingAppt.notes||''):'')+'"></div>' +
+        '<input type="text" id="aNotes" placeholder="Ex: primeira consulta, retorno..." value="'+(editingAppt?escapeHtml(editingAppt.notes||''):(prefill?escapeHtml(prefill.notes):''))+'"></div>' +
       '<button class="btn" id="addAppt" style="margin-top:12px;">'+(editingAppt?'Salvar alterações':'Agendar')+'</button>' +
     '</div>' +
 
@@ -545,6 +587,22 @@ function renderAgenda(){
       editingApptId = null;
       renderAgenda();
     });
+  } else if(prefill){
+    var knownDescs2 = PROCEDURE_GROUPS.reduce(function(a,g){return a.concat(g.options);},[]);
+    if(knownDescs2.indexOf(prefill.description)>=0){
+      descSelect.value = prefill.description;
+    } else {
+      descSelect.value = '__outro__';
+      descCustomWrap.style.display = 'block';
+      descCustom.value = prefill.description;
+    }
+    if(LOCATIONS.indexOf(prefill.location)>=0){
+      locationSelect.value = prefill.location;
+    } else {
+      locationSelect.value = '__outro__';
+      locationCustomWrap.style.display = 'block';
+      locationCustom.value = prefill.location||'';
+    }
   }
 
   var materialsList = document.getElementById('materialsList');
@@ -553,9 +611,10 @@ function renderAgenda(){
     row.className = 'material-row';
     row.innerHTML =
       '<input type="text" class="mName" placeholder="Ex: Toxina botulínica..." value="'+escapeHtml(name||'')+'">' +
-      '<div class="money-field compact"><span class="money-prefix">R$</span><input type="number" class="mCost" min="0" step="0.01" value="'+(cost||'')+'"></div>' +
+      '<div class="money-field compact"><span class="money-prefix">R$</span><input type="text" class="mCost" value="'+(cost?moneyDisplay(cost):'')+'"></div>' +
       '<button type="button" class="icon-btn removeMaterial">'+ICONS.trash+'</button>';
     materialsList.appendChild(row);
+    wireMoneyInput(row.querySelector('.mCost'));
     row.querySelector('.removeMaterial').addEventListener('click', function(){ row.remove(); updateTotals(); });
     row.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', updateTotals); });
   }
@@ -568,23 +627,26 @@ function renderAgenda(){
 
   function getMaterials(){
     return Array.prototype.map.call(materialsList.querySelectorAll('.material-row'), function(row){
-      return { label: row.querySelector('.mName').value.trim(), cost: Number(row.querySelector('.mCost').value)||0 };
+      return { label: row.querySelector('.mName').value.trim(), cost: parseMoneyStr(row.querySelector('.mCost').value) };
     }).filter(function(m){ return m.label || m.cost; });
   }
 
   var priceInput = document.getElementById('aPrice');
+  var roomInput = document.getElementById('aRoom');
+  wireMoneyInput(priceInput);
+  wireMoneyInput(roomInput);
   priceInput.addEventListener('input', function(){ apptTouchedPrice = true; updateTotals(); });
 
   function updateTotals(){
     var materialsSum = getMaterials().reduce(function(a,m){return a+m.cost;},0);
-    var roomCost = Number(document.getElementById('aRoom').value)||0;
+    var roomCost = parseMoneyStr(roomInput.value);
     var custoTotal = materialsSum + roomCost;
     if(!apptTouchedPrice){
       var defaultMargin = clamp(Number(state.settings.defaultMargin)||30, 0, 95);
       var suggested = defaultMargin>=95 ? custoTotal/0.05 : custoTotal/(1-defaultMargin/100);
-      priceInput.value = suggested.toFixed(2);
+      priceInput.value = moneyDisplay(suggested);
     }
-    var price = Number(priceInput.value)||0;
+    var price = parseMoneyStr(priceInput.value);
     var lucro = price - custoTotal;
     var margem = price>0 ? (lucro/price*100) : 0;
     document.getElementById('sumMaterials').textContent = fmtMoney(materialsSum);
@@ -594,7 +656,7 @@ function renderAgenda(){
     document.getElementById('sumMargem').textContent = margem.toFixed(0)+'%';
     return { materialsSum:materialsSum, roomCost:roomCost, custoTotal:custoTotal, margin:margem, price:price };
   }
-  document.getElementById('aRoom').addEventListener('input', updateTotals);
+  roomInput.addEventListener('input', updateTotals);
   updateTotals();
 
   Array.prototype.forEach.call(document.getElementById('agendaSegment').querySelectorAll('button'), function(btn){
@@ -637,7 +699,7 @@ function renderAgenda(){
                 '</div>' +
                 '<div class="conclude-form" id="conclude-'+a.id+'" style="display:none;margin-top:10px;">' +
                   '<div class="field"><label class="field-label">Valor cobrado</label>' +
-                    '<div class="money-field"><span class="money-prefix">R$</span><input type="number" class="ccPrice" min="0" step="0.01" value="'+(a.price||0)+'"></div></div>' +
+                    '<div class="money-field"><span class="money-prefix">R$</span><input type="text" class="ccPrice" value="'+moneyDisplay(a.price||0)+'"></div></div>' +
                   '<p class="helper-text">O pagamento é registrado depois, na aba Pacientes.</p>' +
                   '<button class="btn confirmConclude" data-id="'+a.id+'">Confirmar atendimento</button>' +
                 '</div>')
@@ -649,7 +711,13 @@ function renderAgenda(){
                 '<div class="row-2" style="margin-top:8px;align-items:center;">' +
                   '<span class="pill '+statusClass+'">'+statusLabel+'</span>' +
                   '<button class="btn secondary undoneAppt" data-id="'+a.id+'">Reabrir</button>' +
-                '</div>')
+                '</div>' +
+                (a.hasReturn ? (
+                  '<div class="notice" style="margin:10px 0 0;padding:9px 11px;">' +
+                    '<span style="font-size:.78rem;">Retorno previsto pra ajuste — sala já cobrada.</span>' +
+                    '<button type="button" class="btn secondary scheduleReturn" data-id="'+a.id+'" style="margin-top:8px;">Agendar retorno</button>' +
+                  '</div>'
+                ) : ''))
               ) +
             '</div>' +
           '</div>';
@@ -657,6 +725,7 @@ function renderAgenda(){
       '</div>';
     }).join('');
 
+    Array.prototype.forEach.call(listEl.querySelectorAll('.ccPrice'), function(inp){ wireMoneyInput(inp); });
     Array.prototype.forEach.call(listEl.querySelectorAll('.concludeAppt'), function(btn){
       btn.addEventListener('click', function(){
         var form = document.getElementById('conclude-'+btn.getAttribute('data-id'));
@@ -669,7 +738,7 @@ function renderAgenda(){
         var a = state.appointments.filter(function(x){return x.id===id;})[0];
         if(!a) return;
         var form = document.getElementById('conclude-'+id);
-        var price = Number(form.querySelector('.ccPrice').value)||0;
+        var price = parseMoneyStr(form.querySelector('.ccPrice').value);
         var custoTotal = (a.materialsCost||0)+(a.roomCost||0);
         var margin = price>0 ? ((price-custoTotal)/price*100) : 0;
         btn.disabled = true;
@@ -677,7 +746,7 @@ function renderAgenda(){
           var treatmentData = {
             patientId: a.patientId, date: a.date, description: a.description, location: a.location||'',
             materials: a.materials||[], materialsCost: a.materialsCost||0, roomCost: a.roomCost||0, totalCost: custoTotal,
-            margin: margin, price: price, paid: 0
+            margin: margin, price: price, paid: 0, hasReturn: a.hasReturn||false
           };
           var treatmentId = a.treatmentId;
           if(treatmentId){
@@ -730,6 +799,21 @@ function renderAgenda(){
         content.scrollTop = 0;
       });
     });
+    Array.prototype.forEach.call(listEl.querySelectorAll('.scheduleReturn'), function(btn){
+      btn.addEventListener('click', function(){
+        var a = state.appointments.filter(function(x){return x.id===btn.getAttribute('data-id');})[0];
+        if(!a) return;
+        returnPrefill = {
+          patientName: appointmentPatientName(a),
+          description: a.description+' (Retorno)',
+          location: a.location||'',
+          notes: 'Retorno do atendimento de '+fmtDate(a.date)
+        };
+        agendaFilter = 'proximos';
+        renderAgenda();
+        content.scrollTop = 0;
+      });
+    });
     Array.prototype.forEach.call(listEl.querySelectorAll('.waAppt'), function(btn){
       btn.addEventListener('click', function(){
         var a = state.appointments.filter(function(x){return x.id===btn.getAttribute('data-id');})[0];
@@ -753,6 +837,7 @@ function renderAgenda(){
     var date = document.getElementById('aDate').value || todayISO();
     var time = document.getElementById('aTime').value || '';
     var notes = document.getElementById('aNotes').value.trim();
+    var hasReturn = document.getElementById('aHasReturn').checked;
     var materials = getMaterials();
     var totals = updateTotals();
     var btn = this;
@@ -766,7 +851,7 @@ function renderAgenda(){
         patientId = newPatientRef.id;
       }
       var apptData = {
-        patientId:patientId, date:date, time:time, description:desc, location:location, notes:notes,
+        patientId:patientId, date:date, time:time, description:desc, location:location, notes:notes, hasReturn:hasReturn,
         materials: materials, materialsCost: totals.materialsSum, roomCost: totals.roomCost,
         totalCost: totals.custoTotal, price: totals.price, margin: totals.margin
       };
@@ -802,7 +887,7 @@ function renderStock(){
         '<input type="text" id="pDesc" placeholder="Ex: Caixa de luvas, algodão, gel clareador..."></div>' +
       '<div class="row-2">' +
         '<div class="field"><label class="field-label">Data</label><input type="date" id="pDate" value="'+todayISO()+'"></div>' +
-        '<div class="field"><label class="field-label">Valor</label><div class="money-field"><span class="money-prefix">R$</span><input type="number" id="pValue" min="0" step="0.01"></div></div>' +
+        '<div class="field"><label class="field-label">Valor</label><div class="money-field"><span class="money-prefix">R$</span><input type="text" id="pValue" placeholder="0,00"></div></div>' +
       '</div>' +
       '<button class="btn" id="addPurchase">Adicionar compra</button>' +
     '</div>' +
@@ -810,6 +895,7 @@ function renderStock(){
     '<h2 class="section-title">Compras registradas</h2>' +
     '<div id="purchaseList"></div>';
 
+  wireMoneyInput(document.getElementById('pValue'));
   var listEl = document.getElementById('purchaseList');
   function renderList(){
     var sorted = state.purchases.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
@@ -845,7 +931,7 @@ function renderStock(){
   document.getElementById('addPurchase').addEventListener('click', async function(){
     var desc = document.getElementById('pDesc').value.trim();
     var date = document.getElementById('pDate').value || todayISO();
-    var value = Number(document.getElementById('pValue').value)||0;
+    var value = parseMoneyStr(document.getElementById('pValue').value);
     if(!desc){ showToast('Informe o que foi comprado'); return; }
     if(value<=0){ showToast('Informe o valor'); return; }
     try{
@@ -946,7 +1032,7 @@ function renderPatientDetail(content){
         '</div>' +
         (tbal>0.004 ? (
           '<div class="inline-pay">' +
-            '<div class="money-field"><span class="money-prefix">R$</span><input type="number" class="payInput" min="0" step="0.01" placeholder="0,00"></div>' +
+            '<div class="money-field"><span class="money-prefix">R$</span><input type="text" class="payInput" placeholder="0,00"></div>' +
             '<button class="link-btn registerPay" data-id="'+t.id+'">registrar</button>' +
           '</div>'
         ) : '') +
@@ -978,10 +1064,11 @@ function renderPatientDetail(content){
     }
   });
 
+  Array.prototype.forEach.call(content.querySelectorAll('.payInput'), function(inp){ wireMoneyInput(inp); });
   Array.prototype.forEach.call(content.querySelectorAll('.registerPay'), function(btn){
     btn.addEventListener('click', async function(){
       var row = btn.closest('.inline-pay');
-      var val = Number(row.querySelector('.payInput').value)||0;
+      var val = parseMoneyStr(row.querySelector('.payInput').value);
       if(val<=0){ showToast('Informe um valor'); return; }
       var t = state.treatments.filter(function(x){return x.id===btn.getAttribute('data-id');})[0];
       try{
@@ -1072,7 +1159,7 @@ function renderSettings(){
   content.innerHTML =
     '<div class="card">' +
       '<div class="field"><label class="field-label">Custo padrão da sala por atendimento</label>' +
-        '<div class="money-field"><span class="money-prefix">R$</span><input type="number" id="sRoom" min="0" step="0.01" value="'+(state.settings.defaultRoomCost||'')+'"></div></div>' +
+        '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="sRoom" value="'+moneyDisplay(state.settings.defaultRoomCost||0)+'"></div></div>' +
       '<p class="helper-text">Esse valor entra pré-preenchido em cada novo atendimento (dá pra ajustar na hora, se precisar).</p>' +
       '<div class="field" style="margin-bottom:0;"><label class="field-label">Margem de lucro padrão (%)</label>' +
         '<input type="number" id="sMargin" min="0" max="95" step="1" value="'+state.settings.defaultMargin+'"></div>' +
@@ -1090,7 +1177,7 @@ function renderSettings(){
     '</div>';
 
   function persistSettings(){
-    var room = Number(document.getElementById('sRoom').value)||0;
+    var room = parseMoneyStr(document.getElementById('sRoom').value);
     var margin = clamp(Number(document.getElementById('sMargin').value)||0,0,95);
     state.settings.defaultRoomCost = room;
     state.settings.defaultMargin = margin;
@@ -1101,6 +1188,7 @@ function renderSettings(){
       });
     }, 500);
   }
+  wireMoneyInput(document.getElementById('sRoom'));
   document.getElementById('sRoom').addEventListener('input', persistSettings);
   document.getElementById('sMargin').addEventListener('input', persistSettings);
 
