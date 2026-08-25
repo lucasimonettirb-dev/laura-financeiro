@@ -125,8 +125,18 @@
     font-size:.92rem;color:var(--ink);
   }
   textarea{resize:vertical;min-height:52px;}
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+  input[type=number]{-moz-appearance:textfield;}
+  .money-field{position:relative;}
+  .money-field input{padding-left:32px;font-variant-numeric:tabular-nums;}
+  .money-field .money-prefix{
+    position:absolute;left:10px;top:0;bottom:0;display:flex;align-items:center;
+    color:var(--ink-muted);font-size:.88rem;pointer-events:none;
+  }
+  .money-field.compact input{padding-left:26px;}
+  .money-field.compact .money-prefix{left:7px;font-size:.78rem;}
   .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .material-row{display:grid;grid-template-columns:1fr 96px 30px;gap:8px;align-items:center;margin-bottom:7px;}
+  .material-row{display:grid;grid-template-columns:1fr 104px 30px;gap:8px;align-items:center;margin-bottom:7px;}
   .material-row input{padding:8px 9px;}
   .icon-btn{background:none;border:none;color:var(--ink-muted);cursor:pointer;padding:4px;
     display:flex;align-items:center;justify-content:center;}
@@ -199,7 +209,7 @@
   .segment button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
   .helper-text{font-size:.76rem;color:var(--ink-muted);margin-top:-6px;margin-bottom:12px;line-height:1.4;}
   .inline-pay{display:flex;gap:8px;margin-top:9px;}
-  .inline-pay input{flex:1;}
+  .inline-pay .money-field{flex:1;}
   @media (prefers-reduced-motion: reduce){ *{transition:none!important;} }
 
   @media (min-width:860px){
@@ -286,7 +296,8 @@ var ICONS = {
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
   eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
   eyeOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.6 21.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a21.6 21.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>',
-  whatsapp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.36 7.56L3 20l1.05-5.44A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8.5 10.5c.3 2 2 3.7 4 4"/></svg>'
+  whatsapp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.36 7.56L3 20l1.05-5.44A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8.5 10.5c.3 2 2 3.7 4 4"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
 };
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -378,10 +389,14 @@ function renderAll(){
 
 // ---------- AGENDA ----------
 var agendaFilter = 'proximos';
+var editingApptId = null;
 var apptTouchedPrice = false;
 
 function getPatient(id){
   return state.patients.filter(function(x){return x.id===id;})[0];
+}
+function getTreatment(id){
+  return state.treatments.filter(function(x){return x.id===id;})[0];
 }
 function appointmentPatientName(a){
   var p = getPatient(a.patientId);
@@ -420,8 +435,10 @@ function groupByDay(list){
 }
 
 function renderAgenda(){
-  apptTouchedPrice = false;
   var content = document.getElementById('content');
+  var editingAppt = editingApptId ? state.appointments.filter(function(x){return x.id===editingApptId;})[0] : null;
+  if(editingApptId && !editingAppt){ editingApptId = null; }
+  apptTouchedPrice = !!editingAppt;
   var procedureOptions = PROCEDURE_GROUPS.map(function(g){
     return '<optgroup label="'+escapeHtml(g.label)+'">'+g.options.map(function(o){
       return '<option value="'+escapeHtml(o)+'">'+escapeHtml(o)+'</option>';
@@ -430,9 +447,12 @@ function renderAgenda(){
 
   content.innerHTML =
     '<div class="card">' +
-      '<h2 class="section-title">Novo agendamento</h2>' +
-      '<div class="field"><label class="field-label">Paciente</label>' +
-        '<input type="text" id="aPatient" list="patientDatalist" placeholder="Nome do paciente" autocomplete="off">' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;">' +
+        '<h2 class="section-title" style="margin-bottom:0;">'+(editingAppt?'Editar agendamento':'Novo agendamento')+'</h2>' +
+        (editingAppt ? '<button type="button" class="link-btn" id="cancelEditAppt">cancelar</button>' : '') +
+      '</div>' +
+      '<div class="field" style="margin-top:12px;"><label class="field-label">Paciente</label>' +
+        '<input type="text" id="aPatient" list="patientDatalist" placeholder="Nome do paciente" autocomplete="off" value="'+(editingAppt?escapeHtml(appointmentPatientName(editingAppt)):'')+'">' +
         '<datalist id="patientDatalist">'+state.patients.map(function(p){return '<option value="'+escapeHtml(p.name)+'">';}).join('')+'</datalist>' +
       '</div>' +
       '<div class="field"><label class="field-label">Procedimento</label>' +
@@ -450,8 +470,8 @@ function renderAgenda(){
         '<input type="text" id="aLocationCustom" placeholder="Digite o local">' +
       '</div>' +
       '<div class="row-2">' +
-        '<div class="field"><label class="field-label">Data</label><input type="date" id="aDate" value="'+todayISO()+'"></div>' +
-        '<div class="field"><label class="field-label">Horário</label><input type="time" id="aTime" value="09:00"></div>' +
+        '<div class="field"><label class="field-label">Data</label><input type="date" id="aDate" value="'+(editingAppt?editingAppt.date:todayISO())+'"></div>' +
+        '<div class="field"><label class="field-label">Horário</label><input type="time" id="aTime" value="'+(editingAppt?(editingAppt.time||'09:00'):'09:00')+'"></div>' +
       '</div>' +
     '</div>' +
 
@@ -464,14 +484,14 @@ function renderAgenda(){
 
     '<div class="card">' +
       '<div class="field"><label class="field-label">Custo da sala neste atendimento</label>' +
-        '<input type="number" id="aRoom" min="0" step="0.01" value="'+(Number(state.settings.defaultRoomCost)||0)+'"></div>' +
+        '<div class="money-field"><span class="money-prefix">R$</span><input type="number" id="aRoom" min="0" step="0.01" value="'+(editingAppt ? (editingAppt.roomCost||0) : (Number(state.settings.defaultRoomCost)||0))+'"></div></div>' +
       '<div class="totals" style="border-top:none;margin-top:0;padding-top:0;">' +
         '<div class="line"><span>Custo com materiais</span><span id="sumMaterials">'+fmtMoney(0)+'</span></div>' +
         '<div class="line"><span>Custo da sala</span><span id="sumRoom">'+fmtMoney(0)+'</span></div>' +
         '<div class="line"><span>Custo total</span><span id="sumCusto">'+fmtMoney(0)+'</span></div>' +
       '</div>' +
       '<div class="field" style="margin-top:12px;"><label class="field-label">Valor a cobrar (estimado)</label>' +
-        '<input type="number" id="aPrice" min="0" step="0.01" value="0"></div>' +
+        '<div class="money-field"><span class="money-prefix">R$</span><input type="number" id="aPrice" min="0" step="0.01" value="'+(editingAppt ? (editingAppt.price||0) : 0)+'"></div></div>' +
       '<p class="helper-text">Preencha quanto pretende cobrar — o lucro e a margem abaixo são calculados automaticamente. Dá pra ajustar esse valor na hora de concluir o atendimento.</p>' +
       '<div class="totals">' +
         '<div class="line big"><span>Lucro estimado</span><span id="sumLucro">'+fmtMoney(0)+'</span></div>' +
@@ -481,8 +501,8 @@ function renderAgenda(){
 
     '<div class="card">' +
       '<div class="field" style="margin-bottom:0;"><label class="field-label">Observações (opcional)</label>' +
-        '<input type="text" id="aNotes" placeholder="Ex: primeira consulta, retorno..."></div>' +
-      '<button class="btn" id="addAppt" style="margin-top:12px;">Agendar</button>' +
+        '<input type="text" id="aNotes" placeholder="Ex: primeira consulta, retorno..." value="'+(editingAppt?escapeHtml(editingAppt.notes||''):'')+'"></div>' +
+      '<button class="btn" id="addAppt" style="margin-top:12px;">'+(editingAppt?'Salvar alterações':'Agendar')+'</button>' +
     '</div>' +
 
     '<div class="segment" id="agendaSegment">' +
@@ -505,19 +525,45 @@ function renderAgenda(){
     locationCustomWrap.style.display = locationSelect.value==='__outro__' ? 'block' : 'none';
   });
 
+  if(editingAppt){
+    var knownDescs = PROCEDURE_GROUPS.reduce(function(a,g){return a.concat(g.options);},[]);
+    if(knownDescs.indexOf(editingAppt.description)>=0){
+      descSelect.value = editingAppt.description;
+    } else {
+      descSelect.value = '__outro__';
+      descCustomWrap.style.display = 'block';
+      descCustom.value = editingAppt.description;
+    }
+    if(LOCATIONS.indexOf(editingAppt.location)>=0){
+      locationSelect.value = editingAppt.location;
+    } else {
+      locationSelect.value = '__outro__';
+      locationCustomWrap.style.display = 'block';
+      locationCustom.value = editingAppt.location||'';
+    }
+    document.getElementById('cancelEditAppt').addEventListener('click', function(){
+      editingApptId = null;
+      renderAgenda();
+    });
+  }
+
   var materialsList = document.getElementById('materialsList');
   function addMaterialRow(name, cost){
     var row = document.createElement('div');
     row.className = 'material-row';
     row.innerHTML =
       '<input type="text" class="mName" placeholder="Ex: Toxina botulínica..." value="'+escapeHtml(name||'')+'">' +
-      '<input type="number" class="mCost" placeholder="R$" min="0" step="0.01" value="'+(cost||'')+'">' +
+      '<div class="money-field compact"><span class="money-prefix">R$</span><input type="number" class="mCost" min="0" step="0.01" value="'+(cost||'')+'"></div>' +
       '<button type="button" class="icon-btn removeMaterial">'+ICONS.trash+'</button>';
     materialsList.appendChild(row);
     row.querySelector('.removeMaterial').addEventListener('click', function(){ row.remove(); updateTotals(); });
     row.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', updateTotals); });
   }
-  addMaterialRow('', '');
+  if(editingAppt && editingAppt.materials && editingAppt.materials.length){
+    editingAppt.materials.forEach(function(m){ addMaterialRow(m.label, m.cost); });
+  } else {
+    addMaterialRow('', '');
+  }
   document.getElementById('addMaterial').addEventListener('click', function(){ addMaterialRow('',''); });
 
   function getMaterials(){
@@ -569,9 +615,12 @@ function renderAgenda(){
       return '<div class="agenda-day-group">' +
         '<div class="agenda-day-header'+(g.date===todayISO()?' today':'')+'">'+dayLabel(g.date)+'</div>' +
         g.items.map(function(a){
-          var tbal = (a.price||0) - (a.paid||0);
-          var statusClass = tbal<=0.004 ? 'pago' : ((a.paid||0)>0 ? 'parcial' : 'pendente');
-          var statusLabel = statusClass==='pago' ? 'pago' : (statusClass==='parcial' ? 'parcial' : 'pendente');
+          var linkedTreatment = a.treatmentId ? getTreatment(a.treatmentId) : null;
+          var effPrice = linkedTreatment ? linkedTreatment.price : (a.price||0);
+          var effPaid = linkedTreatment ? linkedTreatment.paid : (a.paid||0);
+          var tbal = effPrice - effPaid;
+          var statusClass = tbal<=0.004 ? 'pago' : (effPaid>0 ? 'parcial' : 'pendente');
+          var statusLabel = statusClass;
           return '<div class="appt-card" data-id="'+a.id+'">' +
             '<div class="appt-time">'+(a.time||'—')+'</div>' +
             '<div class="appt-body">' +
@@ -582,20 +631,20 @@ function renderAgenda(){
                 ('<p class="helper-text" style="margin:6px 0 0;">Estimado: <b style="color:var(--ink);">'+fmtMoney(a.price||0)+'</b></p>' +
                 '<div style="display:flex;gap:8px;margin-top:8px;">' +
                   '<button class="btn secondary concludeAppt" data-id="'+a.id+'" style="flex:1;">Concluir e cobrar</button>' +
+                  '<button class="icon-btn editAppt" data-id="'+a.id+'" title="Editar" style="border:1px solid var(--border);border-radius:9px;">'+ICONS.edit+'</button>' +
                   '<button class="icon-btn waAppt" data-id="'+a.id+'" title="Confirmar por WhatsApp" style="border:1px solid var(--border);border-radius:9px;">'+ICONS.whatsapp+'</button>' +
                   '<button class="icon-btn delAppt" data-id="'+a.id+'" title="Excluir" style="border:1px solid var(--border);border-radius:9px;">'+ICONS.trash+'</button>' +
                 '</div>' +
                 '<div class="conclude-form" id="conclude-'+a.id+'" style="display:none;margin-top:10px;">' +
-                  '<div class="row-2">' +
-                    '<div class="field"><label class="field-label">Valor cobrado</label><input type="number" class="ccPrice" min="0" step="0.01" value="'+(a.price||0)+'"></div>' +
-                    '<div class="field"><label class="field-label">Recebido agora</label><input type="number" class="ccPaid" min="0" step="0.01" value="0"></div>' +
-                  '</div>' +
+                  '<div class="field"><label class="field-label">Valor cobrado</label>' +
+                    '<div class="money-field"><span class="money-prefix">R$</span><input type="number" class="ccPrice" min="0" step="0.01" value="'+(a.price||0)+'"></div></div>' +
+                  '<p class="helper-text">O pagamento é registrado depois, na aba Pacientes.</p>' +
                   '<button class="btn confirmConclude" data-id="'+a.id+'">Confirmar atendimento</button>' +
                 '</div>')
               :
                 ('<div class="figures" style="grid-template-columns:1fr 1fr;">' +
-                  '<div>Cobrado<b>'+fmtMoney(a.price||0)+'</b></div>' +
-                  '<div>Recebido<b>'+fmtMoney(a.paid||0)+'</b></div>' +
+                  '<div>Cobrado<b>'+fmtMoney(effPrice)+'</b></div>' +
+                  '<div>Recebido<b>'+fmtMoney(effPaid)+'</b></div>' +
                 '</div>' +
                 '<div class="row-2" style="margin-top:8px;align-items:center;">' +
                   '<span class="pill '+statusClass+'">'+statusLabel+'</span>' +
@@ -621,18 +670,24 @@ function renderAgenda(){
         if(!a) return;
         var form = document.getElementById('conclude-'+id);
         var price = Number(form.querySelector('.ccPrice').value)||0;
-        var paid = Number(form.querySelector('.ccPaid').value)||0;
         var custoTotal = (a.materialsCost||0)+(a.roomCost||0);
         var margin = price>0 ? ((price-custoTotal)/price*100) : 0;
         btn.disabled = true;
         try{
-          await addDoc(collection(db,'treatments'), {
+          var treatmentData = {
             patientId: a.patientId, date: a.date, description: a.description, location: a.location||'',
             materials: a.materials||[], materialsCost: a.materialsCost||0, roomCost: a.roomCost||0, totalCost: custoTotal,
-            margin: margin, price: price, paid: paid
-          });
-          await updateDoc(doc(db,'appointments', id), { done:true, price:price, paid:paid });
-          showToast('Atendimento concluído!');
+            margin: margin, price: price, paid: 0
+          };
+          var treatmentId = a.treatmentId;
+          if(treatmentId){
+            await updateDoc(doc(db,'treatments', treatmentId), treatmentData);
+          } else {
+            var ref = await addDoc(collection(db,'treatments'), treatmentData);
+            treatmentId = ref.id;
+          }
+          await updateDoc(doc(db,'appointments', id), { done:true, price:price, paid:0, treatmentId:treatmentId });
+          showToast('Atendimento concluído! Registre o pagamento em Pacientes.');
           renderAgenda();
         }catch(err){
           showToast('Erro ao concluir. Tenta de novo.');
@@ -642,8 +697,14 @@ function renderAgenda(){
     });
     Array.prototype.forEach.call(listEl.querySelectorAll('.undoneAppt'), function(btn){
       btn.addEventListener('click', async function(){
-        try{ await updateDoc(doc(db,'appointments', btn.getAttribute('data-id')), { done:false }); showToast('Reaberto'); renderAgenda(); }
-        catch(err){ showToast('Erro ao atualizar.'); }
+        var id = btn.getAttribute('data-id');
+        var a = state.appointments.filter(function(x){return x.id===id;})[0];
+        try{
+          if(a && a.treatmentId){ await deleteDoc(doc(db,'treatments', a.treatmentId)); }
+          await updateDoc(doc(db,'appointments', id), { done:false, paid:0, treatmentId:null });
+          showToast('Reaberto — histórico de pagamento removido');
+          renderAgenda();
+        }catch(err){ showToast('Erro ao atualizar.'); }
       });
     });
     Array.prototype.forEach.call(listEl.querySelectorAll('.delAppt'), function(btn){
@@ -660,6 +721,13 @@ function renderAgenda(){
             btn.setAttribute('data-armed','0'); btn.style.color=''; btn.style.borderColor=''; btn.title='Excluir';
           } }, 4000);
         }
+      });
+    });
+    Array.prototype.forEach.call(listEl.querySelectorAll('.editAppt'), function(btn){
+      btn.addEventListener('click', function(){
+        editingApptId = btn.getAttribute('data-id');
+        renderAgenda();
+        content.scrollTop = 0;
       });
     });
     Array.prototype.forEach.call(listEl.querySelectorAll('.waAppt'), function(btn){
@@ -697,15 +765,24 @@ function renderAgenda(){
         var newPatientRef = await addDoc(collection(db,'patients'), { name:name, phone:'', notes:'', createdAt: todayISO() });
         patientId = newPatientRef.id;
       }
-      await addDoc(collection(db,'appointments'), {
-        patientId:patientId, date:date, time:time, description:desc, location:location, notes:notes, done:false,
+      var apptData = {
+        patientId:patientId, date:date, time:time, description:desc, location:location, notes:notes,
         materials: materials, materialsCost: totals.materialsSum, roomCost: totals.roomCost,
-        totalCost: totals.custoTotal, price: totals.price, margin: totals.margin, paid: 0
-      });
-      showToast('Consulta agendada!');
+        totalCost: totals.custoTotal, price: totals.price, margin: totals.margin
+      };
+      if(editingApptId){
+        await updateDoc(doc(db,'appointments', editingApptId), apptData);
+        showToast('Agendamento atualizado!');
+        editingApptId = null;
+      } else {
+        apptData.done = false;
+        apptData.paid = 0;
+        await addDoc(collection(db,'appointments'), apptData);
+        showToast('Consulta agendada!');
+      }
       renderAgenda();
     }catch(err){
-      showToast('Erro ao agendar. Tenta de novo.');
+      showToast('Erro ao salvar. Tenta de novo.');
       btn.disabled = false;
     }
   });
@@ -725,7 +802,7 @@ function renderStock(){
         '<input type="text" id="pDesc" placeholder="Ex: Caixa de luvas, algodão, gel clareador..."></div>' +
       '<div class="row-2">' +
         '<div class="field"><label class="field-label">Data</label><input type="date" id="pDate" value="'+todayISO()+'"></div>' +
-        '<div class="field"><label class="field-label">Valor</label><input type="number" id="pValue" min="0" step="0.01" placeholder="R$"></div>' +
+        '<div class="field"><label class="field-label">Valor</label><div class="money-field"><span class="money-prefix">R$</span><input type="number" id="pValue" min="0" step="0.01"></div></div>' +
       '</div>' +
       '<button class="btn" id="addPurchase">Adicionar compra</button>' +
     '</div>' +
@@ -869,7 +946,7 @@ function renderPatientDetail(content){
         '</div>' +
         (tbal>0.004 ? (
           '<div class="inline-pay">' +
-            '<input type="number" class="payInput" min="0" step="0.01" placeholder="Valor recebido">' +
+            '<div class="money-field"><span class="money-prefix">R$</span><input type="number" class="payInput" min="0" step="0.01" placeholder="0,00"></div>' +
             '<button class="link-btn registerPay" data-id="'+t.id+'">registrar</button>' +
           '</div>'
         ) : '') +
@@ -995,7 +1072,7 @@ function renderSettings(){
   content.innerHTML =
     '<div class="card">' +
       '<div class="field"><label class="field-label">Custo padrão da sala por atendimento</label>' +
-        '<input type="number" id="sRoom" min="0" step="0.01" value="'+(state.settings.defaultRoomCost||'')+'"></div>' +
+        '<div class="money-field"><span class="money-prefix">R$</span><input type="number" id="sRoom" min="0" step="0.01" value="'+(state.settings.defaultRoomCost||'')+'"></div></div>' +
       '<p class="helper-text">Esse valor entra pré-preenchido em cada novo atendimento (dá pra ajustar na hora, se precisar).</p>' +
       '<div class="field" style="margin-bottom:0;"><label class="field-label">Margem de lucro padrão (%)</label>' +
         '<input type="number" id="sMargin" min="0" max="95" step="1" value="'+state.settings.defaultMargin+'"></div>' +
