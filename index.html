@@ -378,6 +378,7 @@ function nextAppointment(pid){
 
 var activeTab = 'agenda';
 var selectedPatientId = null;
+var editingPatientInfo = false;
 
 var TABS = [
   {id:'agenda', label:'Agenda', icon:'calendar', title:'Agenda', subtitle:'Marque e conclua consultas'},
@@ -979,7 +980,7 @@ function renderPatients(){
 
   document.getElementById('newPatientBtn').addEventListener('click', function(){ openNewPatientForm(); });
   Array.prototype.forEach.call(content.querySelectorAll('.patient-item'), function(el){
-    el.addEventListener('click', function(){ selectedPatientId = el.getAttribute('data-id'); renderPatients(); });
+    el.addEventListener('click', function(){ selectedPatientId = el.getAttribute('data-id'); editingPatientInfo=false; renderPatients(); });
   });
 }
 
@@ -1015,17 +1016,32 @@ function renderPatientDetail(content){
   var nextAppt = nextAppointment(p.id);
 
   var html = '<div class="back-row" id="backBtn">'+ICONS.back+'<span>Pacientes</span></div>';
-  html += '<div class="card">' +
-    '<h2 class="section-title">'+escapeHtml(p.name)+'</h2>' +
-    (p.phone ? '<p class="helper-text" style="margin-bottom:6px;">'+escapeHtml(p.phone)+'</p>' : '') +
-    (p.notes ? '<p class="helper-text">'+escapeHtml(p.notes)+'</p>' : '') +
-    (nextAppt ? '<div class="notice" style="margin-bottom:0;">Próxima consulta: '+fmtDate(nextAppt.date)+(nextAppt.time?' às '+nextAppt.time:'')+' — '+escapeHtml(nextAppt.description)+(nextAppt.location?' ('+escapeHtml(nextAppt.location)+')':'')+'</div>' : '') +
-    '<div class="stat-grid" style="margin-top:8px;margin-bottom:0;">' +
-      '<div class="stat-tile accent"><div class="label">Recebido</div><div class="value">'+fmtMoney(bal.paid)+'</div></div>' +
-      '<div class="stat-tile '+(bal.balance>0.004?'danger':'')+'"><div class="label">Saldo</div><div class="value">'+fmtMoney(bal.balance)+'</div></div>' +
-    '</div>' +
-    '<button class="btn danger" id="delPatientBtn" style="margin-top:12px;">Excluir paciente</button>' +
-  '</div>';
+  html += '<div class="card">';
+  if(editingPatientInfo){
+    html +=
+      '<div class="field"><label class="field-label">Nome</label><input type="text" id="epName" value="'+escapeHtml(p.name)+'"></div>' +
+      '<div class="field"><label class="field-label">Telefone (opcional)</label><input type="tel" id="epPhone" value="'+escapeHtml(p.phone||'')+'" placeholder="(00) 00000-0000"></div>' +
+      '<div class="field"><label class="field-label">Observações (opcional)</label><textarea id="epNotes" placeholder="Alergias, preferências, etc.">'+escapeHtml(p.notes||'')+'</textarea></div>' +
+      '<div class="row-2">' +
+        '<button class="btn secondary" id="epCancel">Cancelar</button>' +
+        '<button class="btn" id="epSave">Salvar</button>' +
+      '</div>';
+  } else {
+    html +=
+      '<div class="row-2" style="grid-template-columns:1fr auto;align-items:flex-start;">' +
+        '<h2 class="section-title" style="margin-bottom:0;">'+escapeHtml(p.name)+'</h2>' +
+        '<button class="icon-btn editPatientBtn" title="Editar dados" style="border:1px solid var(--border);border-radius:9px;">'+ICONS.edit+'</button>' +
+      '</div>' +
+      (p.phone ? '<p class="helper-text" style="margin-bottom:6px;">'+escapeHtml(p.phone)+'</p>' : '') +
+      (p.notes ? '<p class="helper-text">'+escapeHtml(p.notes)+'</p>' : '') +
+      (nextAppt ? '<div class="notice" style="margin-bottom:0;">Próxima consulta: '+fmtDate(nextAppt.date)+(nextAppt.time?' às '+nextAppt.time:'')+' — '+escapeHtml(nextAppt.description)+(nextAppt.location?' ('+escapeHtml(nextAppt.location)+')':'')+'</div>' : '') +
+      '<div class="stat-grid" style="margin-top:8px;margin-bottom:0;">' +
+        '<div class="stat-tile accent"><div class="label">Recebido</div><div class="value">'+fmtMoney(bal.paid)+'</div></div>' +
+        '<div class="stat-tile '+(bal.balance>0.004?'danger':'')+'"><div class="label">Saldo</div><div class="value">'+fmtMoney(bal.balance)+'</div></div>' +
+      '</div>' +
+      '<button class="btn danger" id="delPatientBtn" style="margin-top:12px;">Excluir paciente</button>';
+  }
+  html += '</div>';
 
   html += '<h2 class="section-title">Histórico de atendimentos</h2>';
   if(treatments.length===0){
@@ -1055,27 +1071,47 @@ function renderPatientDetail(content){
   }
   content.innerHTML = html;
 
-  document.getElementById('backBtn').addEventListener('click', function(){ selectedPatientId=null; renderPatients(); });
+  document.getElementById('backBtn').addEventListener('click', function(){ selectedPatientId=null; editingPatientInfo=false; renderPatients(); });
 
-  var delBtn = document.getElementById('delPatientBtn');
-  delBtn.addEventListener('click', async function(){
-    if(delBtn.getAttribute('data-armed')==='1'){
+  if(editingPatientInfo){
+    document.getElementById('epCancel').addEventListener('click', function(){ editingPatientInfo=false; renderPatientDetail(content); });
+    document.getElementById('epSave').addEventListener('click', async function(){
+      var name = document.getElementById('epName').value.trim();
+      if(!name){ showToast('Informe o nome'); return; }
       try{
-        var batch = writeBatch(db);
-        batch.delete(doc(db,'patients',p.id));
-        patientTreatments(p.id).forEach(function(t){ batch.delete(doc(db,'treatments',t.id)); });
-        state.appointments.filter(function(a){return a.patientId===p.id;}).forEach(function(a){ batch.delete(doc(db,'appointments',a.id)); });
-        await batch.commit();
-        selectedPatientId = null;
-        showToast('Paciente excluído');
-        renderPatients();
-      }catch(err){ showToast('Erro ao excluir.'); }
-    } else {
-      delBtn.setAttribute('data-armed','1');
-      delBtn.textContent = 'Confirmar exclusão?';
-      setTimeout(function(){ delBtn.setAttribute('data-armed','0'); delBtn.textContent='Excluir paciente'; }, 4000);
-    }
-  });
+        await updateDoc(doc(db,'patients', p.id), {
+          name:name,
+          phone: document.getElementById('epPhone').value.trim(),
+          notes: document.getElementById('epNotes').value.trim()
+        });
+        editingPatientInfo = false;
+        showToast('Dados atualizados!');
+        renderPatientDetail(content);
+      }catch(err){ showToast('Erro ao salvar.'); }
+    });
+  } else {
+    content.querySelector('.editPatientBtn').addEventListener('click', function(){ editingPatientInfo=true; renderPatientDetail(content); });
+
+    var delBtn = document.getElementById('delPatientBtn');
+    delBtn.addEventListener('click', async function(){
+      if(delBtn.getAttribute('data-armed')==='1'){
+        try{
+          var batch = writeBatch(db);
+          batch.delete(doc(db,'patients',p.id));
+          patientTreatments(p.id).forEach(function(t){ batch.delete(doc(db,'treatments',t.id)); });
+          state.appointments.filter(function(a){return a.patientId===p.id;}).forEach(function(a){ batch.delete(doc(db,'appointments',a.id)); });
+          await batch.commit();
+          selectedPatientId = null;
+          showToast('Paciente excluído');
+          renderPatients();
+        }catch(err){ showToast('Erro ao excluir.'); }
+      } else {
+        delBtn.setAttribute('data-armed','1');
+        delBtn.textContent = 'Confirmar exclusão?';
+        setTimeout(function(){ delBtn.setAttribute('data-armed','0'); delBtn.textContent='Excluir paciente'; }, 4000);
+      }
+    });
+  }
 
   Array.prototype.forEach.call(content.querySelectorAll('.payInput'), function(inp){ wireMoneyInput(inp); });
   Array.prototype.forEach.call(content.querySelectorAll('.registerPay'), function(btn){
