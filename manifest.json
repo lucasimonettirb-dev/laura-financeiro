@@ -1,0 +1,17 @@
+{
+  "name": "Agenda Laura",
+  "short_name": "Agenda Laura",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#15130F",
+  "theme_color": "#15130F",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
