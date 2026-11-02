@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Agenda Laura">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -88,6 +90,12 @@
   }
   .privacy-toggle svg{width:19px;height:19px;}
   .privacy-toggle.active{color:var(--accent-strong);}
+  .settings-toggle{
+    position:absolute;top:14px;left:16px;background:none;border:none;cursor:pointer;
+    color:var(--ink-muted);padding:5px;display:flex;border-radius:8px;
+  }
+  .settings-toggle svg{width:19px;height:19px;}
+  .settings-toggle.active{color:var(--accent-strong);}
   .brand-logo{display:block;margin:0 auto;height:38px;width:auto;}
   @media (prefers-color-scheme: dark){ .brand-logo{filter:invert(1);} }
   :root[data-theme="dark"] .brand-logo{filter:invert(1);}
@@ -221,6 +229,40 @@
   .helper-text{font-size:.76rem;color:var(--ink-muted);margin-top:-6px;margin-bottom:12px;line-height:1.4;}
   .inline-pay{display:flex;gap:8px;margin-top:9px;}
   .inline-pay .money-field{flex:1;}
+
+  .quote-doc{max-width:560px;margin:0 auto;background:#fff;color:#1C1B19;border:1px solid #E6E2DA;border-radius:4px;overflow:hidden;font-family:var(--font-sans);}
+  .quote-doc .qd-body{padding:26px 24px 24px;}
+  .quote-doc .qd-logo{display:block;width:78%;max-width:340px;height:auto;margin:0 auto;}
+  .quote-doc .qd-title{margin-top:22px;padding:16px 0 0 .42em;border-top:1px solid #1C1B19;text-align:center;font-family:var(--font-serif);
+    font-size:.82rem;letter-spacing:.42em;text-transform:uppercase;font-weight:500;}
+  .quote-doc .qd-meta{text-align:center;font-size:.72rem;color:#7C766D;margin-top:6px;}
+  .quote-doc .qd-block{margin-top:22px;}
+  .quote-doc .qd-label{font-family:var(--font-serif);font-size:.62rem;letter-spacing:.24em;text-transform:uppercase;color:#7C766D;font-weight:500;margin-bottom:6px;}
+  .quote-doc .qd-patient{font-family:var(--font-serif);font-size:1.35rem;font-weight:400;letter-spacing:.02em;}
+  .quote-doc .qd-proc{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:10px 0;border-bottom:1px solid #E6E2DA;font-size:.95rem;}
+  .quote-doc .qd-proc span:last-child{white-space:nowrap;}
+  .quote-doc .qd-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;}
+  .quote-doc .qd-total span:first-child{font-family:var(--font-serif);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;}
+  .quote-doc .qd-total span:last-child{font-family:var(--font-serif);font-size:1.5rem;font-weight:500;}
+  .quote-doc .qd-empty{color:#7C766D;font-size:.82rem;padding:10px 0;}
+  .quote-doc .qd-pay{border:1px solid #1C1B19;padding:4px 16px;}
+  .quote-doc .qd-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #E6E2DA;}
+  .quote-doc .qd-row:last-child{border-bottom:none;}
+  .quote-doc .qd-opt{font-family:var(--font-serif);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;}
+  .quote-doc .qd-price{font-family:var(--font-serif);font-size:1.35rem;font-weight:500;text-align:right;white-space:nowrap;}
+  .quote-doc .qd-note{padding:10px 0 8px;font-size:.74rem;line-height:1.45;color:#7C766D;}
+  .quote-doc .qd-legal{margin-top:22px;padding-top:14px;border-top:1px solid #E6E2DA;font-size:.74rem;line-height:1.55;color:#7C766D;}
+  .quote-doc .qd-sign{margin-top:34px;text-align:center;}
+  .quote-doc .qd-sign-line{width:62%;margin:0 auto 10px;border-top:1px solid #1C1B19;}
+  .quote-doc .qd-sign-name{font-family:var(--font-serif);font-size:1.05rem;font-weight:500;letter-spacing:.03em;}
+  .quote-doc .qd-sign-role{margin-top:3px;font-size:.78rem;color:#1C1B19;}
+  .quote-doc .qd-sign-cro{margin-top:2px;font-family:var(--font-serif);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:#7C766D;}
+  .quote-item{display:grid;grid-template-columns:1fr 30px;gap:6px 8px;align-items:center;margin-bottom:14px;}
+  .quote-item .money-field{grid-column:1;max-width:170px;}
+  .quote-item .removeQItem{grid-row:1 / span 2;grid-column:2;}
+  .quote-doc .qd-notes{font-size:.84rem;line-height:1.5;white-space:pre-wrap;}
+  .quote-doc .qd-foot{background:#1C1B19;padding:20px 24px;display:flex;justify-content:center;}
+  .quote-doc .qd-foot img{display:block;width:46px;height:46px;}
   @media (prefers-reduced-motion: reduce){ *{transition:none!important;} }
 
   @media (min-width:860px){
@@ -232,6 +274,7 @@
     }
     header.topbar{grid-area:header;padding:20px 32px 14px;}
     .privacy-toggle{top:18px;right:30px;}
+    .settings-toggle{top:18px;left:auto;right:66px;}
     .brand-logo{margin:0;}
     .section-row{max-width:820px;}
     nav.tabbar{
@@ -258,6 +301,7 @@
 
 <div class="app-shell" id="appShell" style="display:none;">
   <header class="topbar">
+    <button id="settingsToggle" class="settings-toggle" aria-label="Ajustes" title="Ajustes"></button>
     <button id="privacyToggle" class="privacy-toggle" aria-label="Ocultar valores" title="Ocultar valores"></button>
     <img class="brand-logo" src="logo.png" alt="Dra. Laura Nunes — Odontologia Clínica e Estética">
     <div class="section-row">
@@ -308,7 +352,8 @@ var ICONS = {
   eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
   eyeOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.6 21.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a21.6 21.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>',
   whatsapp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.36 7.56L3 20l1.05-5.44A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8.5 10.5c.3 2 2 3.7 4 4"/></svg>',
-  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  file:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>'
 };
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -388,10 +433,11 @@ var editingPatientInfo = false;
 var TABS = [
   {id:'agenda', label:'Agenda', icon:'calendar', title:'Agenda', subtitle:'Marque e conclua consultas'},
   {id:'patients', label:'Pacientes', icon:'users', title:'Pacientes', subtitle:'Histórico e pagamentos'},
+  {id:'quote', label:'Orçamento', icon:'file', title:'Orçamento', subtitle:'Valores e parcelas para a paciente'},
   {id:'stock', label:'Estoque', icon:'box', title:'Estoque e compras', subtitle:'Materiais de uso geral'},
-  {id:'summary', label:'Resumo', icon:'chart', title:'Resumo financeiro', subtitle:'Faturamento, custos e lucro'},
-  {id:'settings', label:'Ajustes', icon:'gear', title:'Ajustes', subtitle:'Custo da sala e margem padrão'}
+  {id:'summary', label:'Resumo', icon:'chart', title:'Resumo financeiro', subtitle:'Faturamento, custos e lucro'}
 ];
+var SETTINGS_META = {id:'settings', title:'Ajustes', subtitle:'Sala, margem e assinatura'};
 
 function renderTabbar(){
   var el = document.getElementById('tabbar');
@@ -422,10 +468,12 @@ function showToast(msg){
 
 function renderAll(){
   renderTabbar();
-  var meta = TABS.filter(function(t){return t.id===activeTab;})[0];
+  var meta = activeTab==='settings' ? SETTINGS_META : TABS.filter(function(t){return t.id===activeTab;})[0];
   setHeader(meta.title, meta.subtitle);
+  document.getElementById('settingsToggle').classList.toggle('active', activeTab==='settings');
   if(activeTab==='agenda') renderAgenda();
   else if(activeTab==='patients') renderPatients();
+  else if(activeTab==='quote') renderQuote();
   else if(activeTab==='stock') renderStock();
   else if(activeTab==='summary') renderSummary();
   else if(activeTab==='settings') renderSettings();
@@ -1149,6 +1197,304 @@ function renderPatientDetail(content){
   });
 }
 
+// ---------- ORÇAMENTO ----------
+var quoteDraft = null;
+var QUOTE_INSTALLMENTS = 12;
+var QUOTE_NOTE = 'O valor parcelado é uma estimativa em 12x e varia conforme a quantidade de parcelas: quanto mais parcelas, maior a taxa.';
+var QUOTE_LEGAL = 'A quantidade e a técnica serão definidas após avaliação individual, respeitando a anatomia e os objetivos da paciente. A indicação, os benefícios esperados, os possíveis riscos e os cuidados após o procedimento serão explicados durante a avaliação.';
+
+function isoLocal(d){
+  var m = d.getMonth()+1, day = d.getDate();
+  return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day;
+}
+function newQuoteDraft(){
+  return { patient:'', items:[{desc:'',value:''}], inst:'',
+    date:isoLocal(new Date()), validDays:15, notes:'' };
+}
+function brl(v){ return r2(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+
+function quoteSigner(){
+  var s = state.settings || {};
+  return { name:(s.signName||'').trim() || 'Dra. Laura Nunes', cro:(s.cro||'').trim() || 'CRO 22095' };
+}
+
+function quoteCalc(q){
+  var items = q.items.map(function(i){ return { desc:i.desc.trim(), value:parseMoneyStr(i.value) }; })
+    .filter(function(i){ return i.desc || i.value; });
+  var total = r2(items.reduce(function(a,i){ return a+i.value; },0));
+  var d = new Date((q.date || isoLocal(new Date()))+'T00:00:00');
+  d.setDate(d.getDate()+(Number(q.validDays)||0));
+  return { items:items, total:total, inst:r2(parseMoneyStr(q.inst)), validUntil:isoLocal(d) };
+}
+
+function quoteHTML(q){
+  var c = quoteCalc(q);
+  var sig = quoteSigner();
+  var rows = c.items.length ? c.items.map(function(i){
+    return '<div class="qd-proc"><span>'+escapeHtml(i.desc||'Procedimento')+'</span><span>'+brl(i.value)+'</span></div>';
+  }).join('') : '<div class="qd-empty">Nenhum procedimento adicionado</div>';
+  var pay = '<div class="qd-row"><div class="qd-opt">À vista no Pix</div><div class="qd-price">'+brl(c.total)+'</div></div>';
+  if(c.inst>0){
+    pay += '<div class="qd-row"><div class="qd-opt">Cartão de crédito</div>' +
+      '<div class="qd-price">'+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+'</div></div>' +
+      '<div class="qd-note">'+QUOTE_NOTE+'</div>';
+  }
+  return '<div class="quote-doc" id="quoteDoc">' +
+    '<div class="qd-body">' +
+      '<img class="qd-logo" src="logo.png" alt="Dra. Laura Nunes — Odontologia Clínica e Estética">' +
+      '<div class="qd-title">Orçamento</div>' +
+      '<div class="qd-meta">Emitido em '+fmtDate(q.date)+' &middot; Válido até '+fmtDate(c.validUntil)+'</div>' +
+      '<div class="qd-block"><div class="qd-label">Paciente</div><div class="qd-patient">'+(q.patient.trim()?escapeHtml(q.patient.trim()):'&mdash;')+'</div></div>' +
+      '<div class="qd-block"><div class="qd-label">Procedimentos</div>'+rows +
+        '<div class="qd-total"><span>Valor total</span><span>'+brl(c.total)+'</span></div></div>' +
+      '<div class="qd-block"><div class="qd-label">Condições de pagamento</div><div class="qd-pay">'+pay+'</div></div>' +
+      (q.notes.trim() ? '<div class="qd-block"><div class="qd-label">Observações</div><div class="qd-notes">'+escapeHtml(q.notes.trim())+'</div></div>' : '') +
+      '<div class="qd-legal">'+QUOTE_LEGAL+'</div>' +
+      '<div class="qd-sign"><div class="qd-sign-line"></div>' +
+        '<div class="qd-sign-name">'+escapeHtml(sig.name)+'</div>' +
+        '<div class="qd-sign-role">Cirurgiã-Dentista</div>' +
+        (sig.cro ? '<div class="qd-sign-cro">'+escapeHtml(sig.cro)+'</div>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="qd-foot"><img src="ln-mark-white.png" alt=""></div>' +
+  '</div>';
+}
+
+function quoteText(q){
+  var c = quoteCalc(q);
+  var t = '';
+  if(q.patient.trim()) t += 'Olá, '+q.patient.trim().split(' ')[0]+'! Segue o seu orçamento:\n\n';
+  t += '*Orçamento — Dra. Laura Nunes*\n';
+  t += 'Data: '+fmtDate(q.date)+' (válido até '+fmtDate(c.validUntil)+')\n\n';
+  t += '*Procedimentos*\n';
+  c.items.forEach(function(i){ t += '• '+(i.desc||'Procedimento')+' — '+brl(i.value)+'\n'; });
+  t += '\n*Valor total: '+brl(c.total)+'*\n';
+  t += '\n*À vista no Pix: '+brl(c.total)+'*\n';
+  if(c.inst>0){
+    t += '*Cartão de crédito: '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+'*\n';
+    t += '_'+QUOTE_NOTE+'_\n';
+  }
+  if(q.notes.trim()) t += '\nObs.: '+q.notes.trim()+'\n';
+  var sig = quoteSigner();
+  t += '\n'+QUOTE_LEGAL+'\n\n'+sig.name+'\nCirurgiã-Dentista'+(sig.cro?' | '+sig.cro:'');
+  return t.trim();
+}
+
+function quoteFileName(q){
+  var slug = q.patient.trim().normalize('NFD').replace(/[^ -~]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  return 'Orcamento-'+(slug||'paciente')+'-'+(q.date||isoLocal(new Date()))+'.pdf';
+}
+
+async function buildQuotePdf(q){
+  if(!window.html2canvas || !window.jspdf) throw new Error('pdf-unavailable');
+  // Captura uma cópia fora da tela com largura fixa, para o PDF sair igual no celular e no computador.
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;left:-10000px;top:0;width:560px;';
+  wrap.innerHTML = quoteHTML(q).replace(' id="quoteDoc"', '');
+  var el = wrap.firstChild;
+  el.style.cssText += 'border:none;border-radius:0;max-width:none;width:560px;margin:0;';
+  document.body.appendChild(wrap);
+  try{
+    if(document.fonts && document.fonts.ready) await document.fonts.ready;
+    await Promise.all(Array.prototype.map.call(el.querySelectorAll('img'), function(img){
+      return img.complete ? null : new Promise(function(r){ img.onload = img.onerror = r; });
+    }));
+    var canvas = await window.html2canvas(el, { scale:3, backgroundColor:'#ffffff', useCORS:true, logging:false });
+    var wMm = 150, hMm = wMm*canvas.height/canvas.width;
+    var pdf = new window.jspdf.jsPDF({ unit:'mm', format:[wMm,hMm], orientation:hMm>wMm?'portrait':'landscape' });
+    pdf.addImage(canvas.toDataURL('image/jpeg',0.92), 'JPEG', 0, 0, wMm, hMm);
+    return new File([pdf.output('blob')], quoteFileName(q), { type:'application/pdf' });
+  } finally {
+    wrap.remove();
+  }
+}
+
+function downloadFile(file){
+  var url = URL.createObjectURL(file);
+  var a = document.createElement('a');
+  a.href = url; a.download = file.name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+}
+
+function renderQuote(){
+  var content = document.getElementById('content');
+  if(!quoteDraft) quoteDraft = newQuoteDraft();
+  var q = quoteDraft;
+
+  var procList = PROCEDURE_GROUPS.reduce(function(a,g){ return a.concat(g.options); },[]).map(function(o){
+    return '<option value="'+escapeHtml(o)+'">';
+  }).join('');
+
+  content.innerHTML =
+    '<div>' +
+      '<div class="card">' +
+        '<h2 class="section-title">Dados do orçamento</h2>' +
+        '<div class="field"><label class="field-label">Paciente</label>' +
+          '<input type="text" id="qPatient" list="qPatientList" placeholder="Nome da paciente" autocomplete="off" value="'+escapeHtml(q.patient)+'">' +
+          '<datalist id="qPatientList">'+state.patients.map(function(p){ return '<option value="'+escapeHtml(p.name)+'">'; }).join('')+'</datalist>' +
+        '</div>' +
+        '<label class="field-label" style="margin-bottom:8px;">Procedimentos</label>' +
+        '<datalist id="qProcList">'+procList+'</datalist>' +
+        '<div id="qItems"></div>' +
+        '<button type="button" class="link-btn" id="qAddItem">+ adicionar procedimento</button>' +
+      '</div>' +
+      '<div class="card">' +
+        '<h2 class="section-title">Pagamento</h2>' +
+        '<div class="totals" style="border-top:none;margin:0 0 12px;padding-top:0;">' +
+          '<div class="line big" style="border-top:none;padding-top:0;margin-top:0;"><span>Total à vista (Pix)</span><span id="qTotal">R$ 0,00</span></div></div>' +
+        '<div class="field"><label class="field-label">Parcela em '+QUOTE_INSTALLMENTS+'x no cartão (opcional)</label>' +
+          '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="qInst" placeholder="0,00" value="'+(q.inst?moneyDisplay(parseMoneyStr(q.inst)):'')+'"></div></div>' +
+        '<p class="helper-text">O total soma os valores dos procedimentos. Sem a parcela, o orçamento mostra só o valor no Pix.</p>' +
+        '<div class="row-2">' +
+          '<div class="field"><label class="field-label">Data</label><input type="date" id="qDate" value="'+escapeHtml(q.date)+'"></div>' +
+          '<div class="field"><label class="field-label">Validade (dias)</label><input type="number" id="qValid" min="0" step="1" value="'+escapeHtml(q.validDays)+'"></div>' +
+        '</div>' +
+        '<div class="field" style="margin-bottom:0;"><label class="field-label">Observações (opcional)</label>' +
+          '<textarea id="qNotes" placeholder="Ex: valores sujeitos a avaliação clínica...">'+escapeHtml(q.notes)+'</textarea></div>' +
+      '</div>' +
+      '<label class="field-label" style="margin:4px 2px 8px;">Pré-visualização — é isso que a paciente recebe</label>' +
+    '</div>' +
+    '<div id="qPreview"></div>' +
+    '<div style="margin-top:14px;">' +
+      '<button class="btn" id="qSendPdf">Enviar PDF por WhatsApp</button>' +
+      '<p class="helper-text" style="margin:8px 0 0;">Abre a lista de compartilhamento do celular: escolha o WhatsApp e a paciente, e o PDF já vai anexado.</p>' +
+      '<div class="row-2" style="margin-top:10px;">' +
+        '<button class="btn secondary" id="qDownload">Baixar PDF</button>' +
+        '<button class="btn secondary" id="qChat">Só a mensagem</button>' +
+      '</div>' +
+      '<button class="link-btn" id="qClear" style="margin-top:6px;">limpar orçamento</button>' +
+    '</div>';
+
+  var itemsEl = document.getElementById('qItems');
+
+  function updatePreview(){
+    document.getElementById('qPreview').innerHTML = quoteHTML(q);
+    document.getElementById('qTotal').textContent = brl(quoteCalc(q).total);
+  }
+
+  function readForm(){
+    q.patient = document.getElementById('qPatient').value;
+    q.date = document.getElementById('qDate').value;
+    q.validDays = document.getElementById('qValid').value;
+    q.notes = document.getElementById('qNotes').value;
+    q.inst = document.getElementById('qInst').value;
+    q.items = Array.prototype.map.call(itemsEl.querySelectorAll('.quote-item'), function(row){
+      return { desc: row.querySelector('.qDesc').value, value: row.querySelector('.qVal').value };
+    });
+    updatePreview();
+    schedulePdf();
+  }
+
+  function addItemRow(item){
+    var row = document.createElement('div');
+    row.className = 'quote-item';
+    row.innerHTML =
+      '<input type="text" class="qDesc" list="qProcList" placeholder="Procedimento" value="'+escapeHtml(item.desc||'')+'">' +
+      '<div class="money-field compact"><span class="money-prefix">R$</span><input type="text" class="qVal" placeholder="0,00" value="'+(item.value?moneyDisplay(parseMoneyStr(item.value)):'')+'"></div>' +
+      '<button type="button" class="icon-btn removeQItem">'+ICONS.trash+'</button>';
+    itemsEl.appendChild(row);
+    wireMoneyInput(row.querySelector('.qVal'));
+    row.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', readForm); });
+    row.querySelector('.removeQItem').addEventListener('click', function(){
+      if(itemsEl.children.length>1){ row.remove(); }
+      else{ row.querySelectorAll('input').forEach(function(inp){ inp.value = ''; }); }
+      readForm();
+    });
+  }
+  q.items.forEach(addItemRow);
+
+  wireMoneyInput(document.getElementById('qInst'));
+  ['qPatient','qInst','qDate','qValid','qNotes'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', readForm);
+  });
+  document.getElementById('qAddItem').addEventListener('click', function(){
+    addItemRow({desc:'',value:''}); readForm();
+  });
+
+  // O PDF é gerado em segundo plano logo após a edição, para o toque em "Enviar" abrir o
+  // compartilhamento na hora (o iPhone bloqueia share() se demorar depois do toque).
+  var pdfTimer = null;
+  var pdfCache = { key:null, file:null };
+  function quoteKey(){ return JSON.stringify(q); }
+  function schedulePdf(){
+    clearTimeout(pdfTimer);
+    if(!q.patient.trim() || quoteCalc(q).total<=0) return;
+    pdfTimer = setTimeout(async function(){
+      if(!document.getElementById('quoteDoc')) return;
+      var key = quoteKey();
+      if(pdfCache.key===key) return;
+      try{
+        var f = await buildQuotePdf(q);
+        if(key===quoteKey()){ pdfCache.key = key; pdfCache.file = f; }
+      }catch(e){}
+    }, 900);
+  }
+  async function getPdf(){
+    var key = quoteKey();
+    if(pdfCache.key===key && pdfCache.file) return pdfCache.file;
+    var f = await buildQuotePdf(q);
+    pdfCache.key = key; pdfCache.file = f;
+    return f;
+  }
+  function checkReady(){
+    readForm();
+    if(!q.patient.trim()){ showToast('Informe o nome da paciente'); return false; }
+    var c = quoteCalc(q);
+    if(!c.items.length){ showToast('Adicione ao menos um procedimento'); return false; }
+    if(c.total<=0){ showToast('Informe o valor dos procedimentos'); return false; }
+    return true;
+  }
+  function openChat(){
+    var p = findPatientByName(q.patient);
+    var digits = (p && p.phone) ? toWhatsAppDigits(p.phone) : '';
+    window.open('https://wa.me/'+digits+'?text='+encodeURIComponent(quoteText(q)), '_blank');
+  }
+
+  var sendBtn = document.getElementById('qSendPdf');
+  var sendLabel = sendBtn.textContent;
+  sendBtn.addEventListener('click', async function(){
+    sendBtn.textContent = sendLabel;
+    if(!checkReady()) return;
+    var file = (pdfCache.key===quoteKey()) ? pdfCache.file : null;
+    if(!file){
+      sendBtn.disabled = true; sendBtn.textContent = 'Gerando PDF…';
+      try{ file = await getPdf(); }
+      catch(err){ showToast('Não consegui gerar o PDF. Confira a internet e tente de novo.'); return; }
+      finally{ sendBtn.disabled = false; sendBtn.textContent = sendLabel; }
+    }
+    var shareData = { files:[file], title:'Orçamento — Dra. Laura Nunes',
+      text:'Olá, '+q.patient.trim().split(' ')[0]+'! Segue o seu orçamento.' };
+    if(navigator.canShare && navigator.canShare(shareData)){
+      try{ await navigator.share(shareData); return; }
+      catch(err){
+        if(err && err.name==='AbortError') return;
+        if(err && err.name==='NotAllowedError'){
+          sendBtn.textContent = 'Toque de novo para enviar';
+          showToast('PDF pronto — toque de novo para enviar');
+          return;
+        }
+      }
+    }
+    downloadFile(file);
+    openChat();
+    showToast('PDF baixado — anexe na conversa do WhatsApp');
+  });
+
+  document.getElementById('qDownload').addEventListener('click', async function(){
+    if(!checkReady()) return;
+    var btn = this, label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Gerando…';
+    try{ downloadFile(await getPdf()); }
+    catch(err){ showToast('Não consegui gerar o PDF. Confira a internet e tente de novo.'); }
+    btn.disabled = false; btn.textContent = label;
+  });
+  document.getElementById('qChat').addEventListener('click', function(){ if(checkReady()) openChat(); });
+  document.getElementById('qClear').addEventListener('click', function(){ quoteDraft = newQuoteDraft(); renderQuote(); });
+
+  readForm();
+}
+
 // ---------- RESUMO ----------
 var summaryMonth = todayISO().slice(0,7);
 
@@ -1219,6 +1565,14 @@ function renderSettings(){
         '<input type="number" id="sMargin" min="0" max="95" step="1" value="'+state.settings.defaultMargin+'"></div>' +
     '</div>' +
     '<div class="card">' +
+      '<h2 class="section-title">Assinatura do orçamento</h2>' +
+      '<div class="field"><label class="field-label">Nome completo</label>' +
+        '<input type="text" id="sSignName" placeholder="Dra. Laura Nunes" value="'+escapeHtml(state.settings.signName||'')+'"></div>' +
+      '<div class="field" style="margin-bottom:0;"><label class="field-label">CRO</label>' +
+        '<input type="text" id="sCro" placeholder="CRO 22095" value="'+escapeHtml(state.settings.cro||'')+'"></div>' +
+      '<p class="helper-text" style="margin:8px 0 0;">Aparecem no final do orçamento, como assinatura, junto de "Cirurgiã-Dentista".</p>' +
+    '</div>' +
+    '<div class="card">' +
       '<p class="helper-text" style="margin-bottom:8px;">Conectado como <b>'+escapeHtml(auth.currentUser ? auth.currentUser.email : '')+'</b></p>' +
       '<button class="btn secondary" id="signOutBtn">Sair</button>' +
     '</div>' +
@@ -1233,11 +1587,15 @@ function renderSettings(){
   function persistSettings(){
     var room = parseMoneyStr(document.getElementById('sRoom').value);
     var margin = clamp(Number(document.getElementById('sMargin').value)||0,0,95);
+    var signName = document.getElementById('sSignName').value.trim();
+    var cro = document.getElementById('sCro').value.trim();
     state.settings.defaultRoomCost = room;
     state.settings.defaultMargin = margin;
+    state.settings.signName = signName;
+    state.settings.cro = cro;
     clearTimeout(settingsSaveTimer);
     settingsSaveTimer = setTimeout(function(){
-      setDoc(doc(db,'settings','main'), { defaultRoomCost:room, defaultMargin:margin }).catch(function(){
+      setDoc(doc(db,'settings','main'), { defaultRoomCost:room, defaultMargin:margin, signName:signName, cro:cro }).catch(function(){
         showToast('Erro ao salvar ajustes.');
       });
     }, 500);
@@ -1245,7 +1603,8 @@ function renderSettings(){
   wireMoneyInput(document.getElementById('sRoom'));
   document.getElementById('sRoom').addEventListener('input', persistSettings);
   document.getElementById('sMargin').addEventListener('input', persistSettings);
-
+  document.getElementById('sSignName').addEventListener('input', persistSettings);
+  document.getElementById('sCro').addEventListener('input', persistSettings);
   document.getElementById('signOutBtn').addEventListener('click', function(){ signOut(auth); });
 
   document.getElementById('exportBtn').addEventListener('click', function(){
@@ -1285,6 +1644,15 @@ function renderSettings(){
   });
 }
 
+// ---------- ATALHO DE AJUSTES ----------
+var settingsBtn = document.getElementById('settingsToggle');
+settingsBtn.innerHTML = ICONS.gear;
+settingsBtn.addEventListener('click', function(){
+  activeTab = 'settings';
+  selectedPatientId = null;
+  renderAll();
+});
+
 // ---------- PRIVACIDADE ----------
 var privacyBtn = document.getElementById('privacyToggle');
 function updatePrivacyBtn(){
@@ -1306,9 +1674,9 @@ var unsubscribers = [];
 function stopListeners(){ unsubscribers.forEach(function(u){ u(); }); unsubscribers = []; }
 
 function onDataChanged(){
-  if(activeTab==='agenda') return;
+  if(activeTab==='agenda' || activeTab==='quote') return;
   var el = document.activeElement;
-  if(activeTab==='settings' && el && (el.id==='sRoom' || el.id==='sMargin')) return;
+  if(activeTab==='settings' && el && (el.id==='sRoom' || el.id==='sMargin' || el.id==='sSignName' || el.id==='sCro')) return;
   renderAll();
 }
 
