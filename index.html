@@ -246,12 +246,12 @@
   .quote-doc .qd-total span:last-child{font-family:var(--font-serif);font-size:1.5rem;font-weight:500;}
   .quote-doc .qd-empty{color:#7C766D;font-size:.82rem;padding:10px 0;}
   .quote-doc .qd-pay{border:1px solid #1C1B19;padding:4px 16px;}
-  .quote-doc .qd-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #E6E2DA;}
+  .quote-doc .qd-row{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:68px;padding:10px 0;border-bottom:1px solid #E6E2DA;}
   .quote-doc .qd-row:last-child{border-bottom:none;}
-  .quote-doc .qd-opt{font-family:var(--font-serif);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;}
-  .quote-doc .qd-sub{font-size:.72rem;color:#7C766D;margin-top:3px;}
-  .quote-doc .qd-price{font-family:var(--font-serif);font-size:1.35rem;font-weight:500;text-align:right;white-space:nowrap;}
-  .quote-doc .qd-note{padding:10px 0 8px;font-size:.74rem;line-height:1.45;color:#7C766D;}
+  .quote-doc .qd-opt{font-family:var(--font-serif);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap;}
+  .quote-doc .qd-sub{font-size:.72rem;color:#7C766D;margin-top:3px;white-space:nowrap;}
+  .quote-doc .qd-price{font-family:var(--font-serif);font-size:1.35rem;font-weight:500;line-height:1.25;text-align:right;white-space:nowrap;}
+  .quote-doc .qd-price small{display:block;font-family:var(--font-sans);font-size:.7rem;font-weight:400;color:#7C766D;line-height:1.2;}
   .quote-doc .qd-legal{margin-top:22px;padding-top:14px;border-top:1px solid #E6E2DA;font-size:.74rem;line-height:1.55;color:#7C766D;}
   .quote-doc .qd-sign{margin-top:34px;text-align:center;}
   .quote-doc .qd-sign-line{width:62%;margin:0 auto 10px;border-top:1px solid #1C1B19;}
@@ -1201,7 +1201,6 @@ function renderPatientDetail(content){
 // ---------- ORÇAMENTO ----------
 var quoteDraft = null;
 var QUOTE_INSTALLMENTS = 12;
-var QUOTE_NOTE = 'O valor parcelado é uma estimativa em 12x e varia conforme a quantidade de parcelas: quanto mais parcelas, maior a taxa.';
 var QUOTE_LEGAL = 'A quantidade e a técnica serão definidas após avaliação individual, respeitando a anatomia e os objetivos da paciente. A indicação, os benefícios esperados, os possíveis riscos e os cuidados após o procedimento serão explicados durante a avaliação.';
 
 function isoLocal(d){
@@ -1209,7 +1208,7 @@ function isoLocal(d){
   return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day;
 }
 function newQuoteDraft(){
-  return { patient:'', items:[{desc:'',value:''}], pix:'', inst:'',
+  return { patient:'', items:[{desc:'',value:''}], card:'',
     date:isoLocal(new Date()), validDays:15, notes:'' };
 }
 function brl(v){ return r2(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
@@ -1225,9 +1224,8 @@ function quoteCalc(q){
   var total = r2(items.reduce(function(a,i){ return a+i.value; },0));
   var d = new Date((q.date || isoLocal(new Date()))+'T00:00:00');
   d.setDate(d.getDate()+(Number(q.validDays)||0));
-  var pixRaw = r2(parseMoneyStr(q.pix));
-  var pix = pixRaw>0 ? pixRaw : total;
-  return { items:items, total:total, pix:pix, discount:pix<total-0.004, inst:r2(parseMoneyStr(q.inst)), validUntil:isoLocal(d) };
+  var card = r2(parseMoneyStr(q.card));
+  return { items:items, total:total, card:card, inst:r2(card/QUOTE_INSTALLMENTS), validUntil:isoLocal(d) };
 }
 
 function quoteHTML(q){
@@ -1236,15 +1234,13 @@ function quoteHTML(q){
   var rows = c.items.length ? c.items.map(function(i){
     return '<div class="qd-proc"><span>'+escapeHtml(i.desc||'Procedimento')+'</span><span>'+brl(i.value)+'</span></div>';
   }).join('') : '<div class="qd-empty">Nenhum procedimento adicionado</div>';
-  var pay = '<div class="qd-row"><div><div class="qd-opt">À vista no Pix</div>' +
-    (c.discount ? '<div class="qd-sub">com desconto</div>' : '') + '</div>' +
-    '<div class="qd-price">'+brl(c.pix)+'</div></div>' +
-    '<div class="qd-row"><div><div class="qd-opt">Cartão à vista</div><div class="qd-sub">crédito, 1x</div></div>' +
+  var pay = '<div class="qd-row"><div class="qd-opt">À vista no Pix</div>' +
     '<div class="qd-price">'+brl(c.total)+'</div></div>';
-  if(c.inst>0){
-    pay += '<div class="qd-row"><div class="qd-opt">Cartão parcelado</div>' +
-      '<div class="qd-price">'+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+'</div></div>' +
-      '<div class="qd-note">'+QUOTE_NOTE+'</div>';
+  if(c.card>0){
+    pay += '<div class="qd-row"><div><div class="qd-opt">Cartão à vista</div><div class="qd-sub">crédito 1x, sem juros</div></div>' +
+      '<div class="qd-price">'+brl(c.card)+'</div></div>' +
+      '<div class="qd-row"><div><div class="qd-opt">Cartão em '+QUOTE_INSTALLMENTS+'x</div><div class="qd-sub">crédito, sem juros</div></div>' +
+      '<div class="qd-price"><small>'+QUOTE_INSTALLMENTS+'x de</small>'+brl(c.inst)+'</div></div>';
   }
   return '<div class="quote-doc" id="quoteDoc">' +
     '<div class="qd-body">' +
@@ -1276,11 +1272,10 @@ function quoteText(q){
   t += '*Procedimentos*\n';
   c.items.forEach(function(i){ t += '• '+(i.desc||'Procedimento')+' — '+brl(i.value)+'\n'; });
   t += '\n*Valor total: '+brl(c.total)+'*\n';
-  t += '\n*À vista no Pix: '+brl(c.pix)+'*'+(c.discount?' (com desconto)':'')+'\n';
-  t += '*Cartão de crédito à vista: '+brl(c.total)+'*\n';
-  if(c.inst>0){
-    t += '*Cartão de crédito parcelado: '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+'*\n';
-    t += '_'+QUOTE_NOTE+'_\n';
+  t += '\n*À vista no Pix: '+brl(c.total)+'*\n';
+  if(c.card>0){
+    t += '*Cartão de crédito à vista (1x, sem juros): '+brl(c.card)+'*\n';
+    t += '*Cartão de crédito em '+QUOTE_INSTALLMENTS+'x sem juros: '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+'*\n';
   }
   if(q.notes.trim()) t += '\nObs.: '+q.notes.trim()+'\n';
   var sig = quoteSigner();
@@ -1350,14 +1345,10 @@ function renderQuote(){
       '<div class="card">' +
         '<h2 class="section-title">Pagamento</h2>' +
         '<div class="totals" style="border-top:none;margin:0 0 12px;padding-top:0;">' +
-          '<div class="line big" style="border-top:none;padding-top:0;margin-top:0;"><span>Valor total</span><span id="qTotal">R$ 0,00</span></div></div>' +
-        '<div class="row-2">' +
-          '<div class="field"><label class="field-label">À vista (Pix)</label>' +
-            '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="qPix" placeholder="0,00" value="'+(q.pix?moneyDisplay(parseMoneyStr(q.pix)):'')+'"></div></div>' +
-          '<div class="field"><label class="field-label">Parcela em '+QUOTE_INSTALLMENTS+'x</label>' +
-            '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="qInst" placeholder="0,00" value="'+(q.inst?moneyDisplay(parseMoneyStr(q.inst)):'')+'"></div></div>' +
-        '</div>' +
-        '<p class="helper-text" style="margin-top:-2px;">O valor total soma os procedimentos e é o valor do cartão à vista. Digite o Pix com desconto (em branco, vale o total) e a parcela em '+QUOTE_INSTALLMENTS+'x com juros (opcional).</p>' +
+          '<div class="line big" style="border-top:none;padding-top:0;margin-top:0;"><span>À vista no Pix</span><span id="qTotal">R$ 0,00</span></div></div>' +
+        '<div class="field"><label class="field-label">Cartão à vista (crédito 1x)</label>' +
+          '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="qCard" placeholder="0,00" value="'+(q.card?moneyDisplay(parseMoneyStr(q.card)):'')+'"></div></div>' +
+        '<p class="helper-text" id="qInstHint" style="margin-top:-2px;"></p>' +
         '<div class="row-2">' +
           '<div class="field"><label class="field-label">Data</label><input type="date" id="qDate" value="'+escapeHtml(q.date)+'"></div>' +
           '<div class="field"><label class="field-label">Validade (dias)</label><input type="number" id="qValid" min="0" step="1" value="'+escapeHtml(q.validDays)+'"></div>' +
@@ -1384,7 +1375,9 @@ function renderQuote(){
     document.getElementById('qPreview').innerHTML = quoteHTML(q);
     var c = quoteCalc(q);
     document.getElementById('qTotal').textContent = brl(c.total);
-    document.getElementById('qPix').placeholder = c.total>0 ? moneyDisplay(c.total) : '0,00';
+    document.getElementById('qInstHint').textContent = c.card>0
+      ? 'Em '+QUOTE_INSTALLMENTS+'x sem juros: '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+' (calculado sozinho).'
+      : 'O Pix é o valor total dos procedimentos. Digite o valor do cartão à vista (já com a taxa) para mostrar também o cartão e o 12x.';
   }
 
   function readForm(){
@@ -1392,8 +1385,7 @@ function renderQuote(){
     q.date = document.getElementById('qDate').value;
     q.validDays = document.getElementById('qValid').value;
     q.notes = document.getElementById('qNotes').value;
-    q.pix = document.getElementById('qPix').value;
-    q.inst = document.getElementById('qInst').value;
+    q.card = document.getElementById('qCard').value;
     q.items = Array.prototype.map.call(itemsEl.querySelectorAll('.quote-item'), function(row){
       return { desc: row.querySelector('.qDesc').value, value: row.querySelector('.qVal').value };
     });
@@ -1419,9 +1411,8 @@ function renderQuote(){
   }
   q.items.forEach(addItemRow);
 
-  wireMoneyInput(document.getElementById('qPix'));
-  wireMoneyInput(document.getElementById('qInst'));
-  ['qPatient','qPix','qInst','qDate','qValid','qNotes'].forEach(function(id){
+  wireMoneyInput(document.getElementById('qCard'));
+  ['qPatient','qCard','qDate','qValid','qNotes'].forEach(function(id){
     document.getElementById(id).addEventListener('input', readForm);
   });
   document.getElementById('qAddItem').addEventListener('click', function(){
