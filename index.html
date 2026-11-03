@@ -249,6 +249,7 @@
   .quote-doc .qd-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #E6E2DA;}
   .quote-doc .qd-row:last-child{border-bottom:none;}
   .quote-doc .qd-opt{font-family:var(--font-serif);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;}
+  .quote-doc .qd-sub{font-size:.72rem;color:#7C766D;margin-top:3px;}
   .quote-doc .qd-price{font-family:var(--font-serif);font-size:1.35rem;font-weight:500;text-align:right;white-space:nowrap;}
   .quote-doc .qd-note{padding:10px 0 8px;font-size:.74rem;line-height:1.45;color:#7C766D;}
   .quote-doc .qd-legal{margin-top:22px;padding-top:14px;border-top:1px solid #E6E2DA;font-size:.74rem;line-height:1.55;color:#7C766D;}
@@ -1208,7 +1209,7 @@ function isoLocal(d){
   return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day;
 }
 function newQuoteDraft(){
-  return { patient:'', items:[{desc:'',value:''}], inst:'',
+  return { patient:'', items:[{desc:'',value:''}], pix:'', inst:'',
     date:isoLocal(new Date()), validDays:15, notes:'' };
 }
 function brl(v){ return r2(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
@@ -1224,7 +1225,9 @@ function quoteCalc(q){
   var total = r2(items.reduce(function(a,i){ return a+i.value; },0));
   var d = new Date((q.date || isoLocal(new Date()))+'T00:00:00');
   d.setDate(d.getDate()+(Number(q.validDays)||0));
-  return { items:items, total:total, inst:r2(parseMoneyStr(q.inst)), validUntil:isoLocal(d) };
+  var pixRaw = r2(parseMoneyStr(q.pix));
+  var pix = pixRaw>0 ? pixRaw : total;
+  return { items:items, total:total, pix:pix, discount:pix<total-0.004, inst:r2(parseMoneyStr(q.inst)), validUntil:isoLocal(d) };
 }
 
 function quoteHTML(q){
@@ -1233,9 +1236,13 @@ function quoteHTML(q){
   var rows = c.items.length ? c.items.map(function(i){
     return '<div class="qd-proc"><span>'+escapeHtml(i.desc||'Procedimento')+'</span><span>'+brl(i.value)+'</span></div>';
   }).join('') : '<div class="qd-empty">Nenhum procedimento adicionado</div>';
-  var pay = '<div class="qd-row"><div class="qd-opt">À vista no Pix</div><div class="qd-price">'+brl(c.total)+'</div></div>';
+  var pay = '<div class="qd-row"><div><div class="qd-opt">À vista no Pix</div>' +
+    (c.discount ? '<div class="qd-sub">com desconto</div>' : '') + '</div>' +
+    '<div class="qd-price">'+brl(c.pix)+'</div></div>' +
+    '<div class="qd-row"><div><div class="qd-opt">Cartão à vista</div><div class="qd-sub">crédito, 1x</div></div>' +
+    '<div class="qd-price">'+brl(c.total)+'</div></div>';
   if(c.inst>0){
-    pay += '<div class="qd-row"><div class="qd-opt">Cartão de crédito</div>' +
+    pay += '<div class="qd-row"><div class="qd-opt">Cartão parcelado</div>' +
       '<div class="qd-price">'+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+'</div></div>' +
       '<div class="qd-note">'+QUOTE_NOTE+'</div>';
   }
@@ -1269,9 +1276,10 @@ function quoteText(q){
   t += '*Procedimentos*\n';
   c.items.forEach(function(i){ t += '• '+(i.desc||'Procedimento')+' — '+brl(i.value)+'\n'; });
   t += '\n*Valor total: '+brl(c.total)+'*\n';
-  t += '\n*À vista no Pix: '+brl(c.total)+'*\n';
+  t += '\n*À vista no Pix: '+brl(c.pix)+'*'+(c.discount?' (com desconto)':'')+'\n';
+  t += '*Cartão de crédito à vista: '+brl(c.total)+'*\n';
   if(c.inst>0){
-    t += '*Cartão de crédito: '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+'*\n';
+    t += '*Cartão de crédito parcelado: '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+'*\n';
     t += '_'+QUOTE_NOTE+'_\n';
   }
   if(q.notes.trim()) t += '\nObs.: '+q.notes.trim()+'\n';
@@ -1342,10 +1350,14 @@ function renderQuote(){
       '<div class="card">' +
         '<h2 class="section-title">Pagamento</h2>' +
         '<div class="totals" style="border-top:none;margin:0 0 12px;padding-top:0;">' +
-          '<div class="line big" style="border-top:none;padding-top:0;margin-top:0;"><span>Total à vista (Pix)</span><span id="qTotal">R$ 0,00</span></div></div>' +
-        '<div class="field"><label class="field-label">Parcela em '+QUOTE_INSTALLMENTS+'x no cartão (opcional)</label>' +
-          '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="qInst" placeholder="0,00" value="'+(q.inst?moneyDisplay(parseMoneyStr(q.inst)):'')+'"></div></div>' +
-        '<p class="helper-text">O total soma os valores dos procedimentos. Sem a parcela, o orçamento mostra só o valor no Pix.</p>' +
+          '<div class="line big" style="border-top:none;padding-top:0;margin-top:0;"><span>Valor total</span><span id="qTotal">R$ 0,00</span></div></div>' +
+        '<div class="row-2">' +
+          '<div class="field"><label class="field-label">À vista (Pix)</label>' +
+            '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="qPix" placeholder="0,00" value="'+(q.pix?moneyDisplay(parseMoneyStr(q.pix)):'')+'"></div></div>' +
+          '<div class="field"><label class="field-label">Parcela em '+QUOTE_INSTALLMENTS+'x</label>' +
+            '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="qInst" placeholder="0,00" value="'+(q.inst?moneyDisplay(parseMoneyStr(q.inst)):'')+'"></div></div>' +
+        '</div>' +
+        '<p class="helper-text" style="margin-top:-2px;">O valor total soma os procedimentos e é o valor do cartão à vista. Digite o Pix com desconto (em branco, vale o total) e a parcela em '+QUOTE_INSTALLMENTS+'x com juros (opcional).</p>' +
         '<div class="row-2">' +
           '<div class="field"><label class="field-label">Data</label><input type="date" id="qDate" value="'+escapeHtml(q.date)+'"></div>' +
           '<div class="field"><label class="field-label">Validade (dias)</label><input type="number" id="qValid" min="0" step="1" value="'+escapeHtml(q.validDays)+'"></div>' +
@@ -1370,7 +1382,9 @@ function renderQuote(){
 
   function updatePreview(){
     document.getElementById('qPreview').innerHTML = quoteHTML(q);
-    document.getElementById('qTotal').textContent = brl(quoteCalc(q).total);
+    var c = quoteCalc(q);
+    document.getElementById('qTotal').textContent = brl(c.total);
+    document.getElementById('qPix').placeholder = c.total>0 ? moneyDisplay(c.total) : '0,00';
   }
 
   function readForm(){
@@ -1378,6 +1392,7 @@ function renderQuote(){
     q.date = document.getElementById('qDate').value;
     q.validDays = document.getElementById('qValid').value;
     q.notes = document.getElementById('qNotes').value;
+    q.pix = document.getElementById('qPix').value;
     q.inst = document.getElementById('qInst').value;
     q.items = Array.prototype.map.call(itemsEl.querySelectorAll('.quote-item'), function(row){
       return { desc: row.querySelector('.qDesc').value, value: row.querySelector('.qVal').value };
@@ -1404,8 +1419,9 @@ function renderQuote(){
   }
   q.items.forEach(addItemRow);
 
+  wireMoneyInput(document.getElementById('qPix'));
   wireMoneyInput(document.getElementById('qInst'));
-  ['qPatient','qInst','qDate','qValid','qNotes'].forEach(function(id){
+  ['qPatient','qPix','qInst','qDate','qValid','qNotes'].forEach(function(id){
     document.getElementById(id).addEventListener('input', readForm);
   });
   document.getElementById('qAddItem').addEventListener('click', function(){
