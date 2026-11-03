@@ -248,10 +248,12 @@
   .quote-doc .qd-pay{border:1px solid #1C1B19;padding:4px 16px;}
   .quote-doc .qd-row{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:68px;padding:10px 0;border-bottom:1px solid #E6E2DA;}
   .quote-doc .qd-row:last-child{border-bottom:none;}
-  .quote-doc .qd-opt{font-family:var(--font-serif);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap;}
-  .quote-doc .qd-sub{font-size:.72rem;color:#7C766D;margin-top:3px;white-space:nowrap;}
+  .quote-doc .qd-row > div:first-child{min-width:0;}
+  .quote-doc .qd-price{flex-shrink:0;}
+  .quote-doc .qd-opt{font-family:var(--font-serif);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;}
+  .quote-doc .qd-sub{font-size:.72rem;color:#7C766D;margin-top:3px;}
   .quote-doc .qd-price{font-family:var(--font-serif);font-size:1.35rem;font-weight:500;line-height:1.25;text-align:right;white-space:nowrap;}
-  .quote-doc .qd-price small{display:block;font-family:var(--font-sans);font-size:.7rem;font-weight:400;color:#7C766D;line-height:1.2;}
+  .quote-doc .qd-price small{display:block;margin-top:3px;font-family:var(--font-sans);font-size:.78rem;font-weight:400;color:#7C766D;line-height:1.2;}
   .quote-doc .qd-legal{margin-top:22px;padding-top:14px;border-top:1px solid #E6E2DA;font-size:.74rem;line-height:1.55;color:#7C766D;}
   .quote-doc .qd-sign{margin-top:34px;text-align:center;}
   .quote-doc .qd-sign-line{width:62%;margin:0 auto 10px;border-top:1px solid #1C1B19;}
@@ -1237,10 +1239,8 @@ function quoteHTML(q){
   var pay = '<div class="qd-row"><div class="qd-opt">À vista no Pix</div>' +
     '<div class="qd-price">'+brl(c.total)+'</div></div>';
   if(c.card>0){
-    pay += '<div class="qd-row"><div><div class="qd-opt">Cartão à vista</div><div class="qd-sub">crédito 1x, sem juros</div></div>' +
-      '<div class="qd-price">'+brl(c.card)+'</div></div>' +
-      '<div class="qd-row"><div><div class="qd-opt">Cartão em '+QUOTE_INSTALLMENTS+'x</div><div class="qd-sub">crédito, sem juros</div></div>' +
-      '<div class="qd-price"><small>'+QUOTE_INSTALLMENTS+'x de</small>'+brl(c.inst)+'</div></div>';
+    pay += '<div class="qd-row"><div><div class="qd-opt">Cartão em até '+QUOTE_INSTALLMENTS+'x</div><div class="qd-sub">crédito</div></div>' +
+      '<div class="qd-price">'+brl(c.card)+'<small>ou '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+'</small></div></div>';
   }
   return '<div class="quote-doc" id="quoteDoc">' +
     '<div class="qd-body">' +
@@ -1274,8 +1274,7 @@ function quoteText(q){
   t += '\n*Valor total: '+brl(c.total)+'*\n';
   t += '\n*À vista no Pix: '+brl(c.total)+'*\n';
   if(c.card>0){
-    t += '*Cartão de crédito à vista (1x, sem juros): '+brl(c.card)+'*\n';
-    t += '*Cartão de crédito em '+QUOTE_INSTALLMENTS+'x sem juros: '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+'*\n';
+    t += '*Cartão de crédito em até '+QUOTE_INSTALLMENTS+'x: '+brl(c.card)+'* (ou '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+')\n';
   }
   if(q.notes.trim()) t += '\nObs.: '+q.notes.trim()+'\n';
   var sig = quoteSigner();
@@ -1346,7 +1345,7 @@ function renderQuote(){
         '<h2 class="section-title">Pagamento</h2>' +
         '<div class="totals" style="border-top:none;margin:0 0 12px;padding-top:0;">' +
           '<div class="line big" style="border-top:none;padding-top:0;margin-top:0;"><span>À vista no Pix</span><span id="qTotal">R$ 0,00</span></div></div>' +
-        '<div class="field"><label class="field-label">Cartão à vista (crédito 1x)</label>' +
+        '<div class="field"><label class="field-label">Cartão em até '+QUOTE_INSTALLMENTS+'x (crédito)</label>' +
           '<div class="money-field"><span class="money-prefix">R$</span><input type="text" id="qCard" placeholder="0,00" value="'+(q.card?moneyDisplay(parseMoneyStr(q.card)):'')+'"></div></div>' +
         '<p class="helper-text" id="qInstHint" style="margin-top:-2px;"></p>' +
         '<div class="row-2">' +
@@ -1376,8 +1375,8 @@ function renderQuote(){
     var c = quoteCalc(q);
     document.getElementById('qTotal').textContent = brl(c.total);
     document.getElementById('qInstHint').textContent = c.card>0
-      ? 'Em '+QUOTE_INSTALLMENTS+'x sem juros: '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+' (calculado sozinho).'
-      : 'O Pix é o valor total dos procedimentos. Digite o valor do cartão à vista (já com a taxa) para mostrar também o cartão e o 12x.';
+      ? 'Ou '+QUOTE_INSTALLMENTS+'x de '+brl(c.inst)+' (calculado sozinho).'
+      : 'O Pix é o valor total dos procedimentos. Digite o valor do cartão (já com a taxa) para mostrar também o cartão em até '+QUOTE_INSTALLMENTS+'x.';
   }
 
   function readForm(){
